@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Email CRM</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>CRM System</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#dashboard" class="nav-link active" data-tab="dashboard">Dashboard</a></li>
+                    <li><a href="#users" class="nav-link" data-tab="users">Users</a></li>
+                    <li><a href="#enquiries" class="nav-link" data-tab="enquiries">Enquiries</a></li>
+                    <li><a href="#support" class="nav-link" data-tab="support">Support Tickets</a></li>
+                    <li><a href="#contacts" class="nav-link" data-tab="contacts">Contacts</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="userInfo"></div>
+                <button id="logoutBtn" class="btn btn-danger btn-block">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="header-right">
+                    <span id="userDisplay"></span>
+                </div>
+            </header>
+
+            <!-- Dashboard Tab -->
+            <section id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="card stats-card">
+                        <h3>Total Users</h3>
+                        <p class="stat-number" id="totalUsers">0</p>
+                    </div>
+                    <div class="card stats-card">
+                        <h3>Total Enquiries</h3>
+                        <p class="stat-number" id="totalEnquiries">0</p>
+                    </div>
+                    <div class="card stats-card">
+                        <h3>Total Tickets</h3>
+                        <p class="stat-number" id="totalTickets">0</p>
+                    </div>
+                    <div class="card stats-card">
+                        <h3>Total Contacts</h3>
+                        <p class="stat-number" id="totalContacts">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Tab -->
+            <section id="users" class="tab-content">
+                <div class="section-header">
+                    <h2>User Management</h2>
+                    <button id="createUserBtn" class="btn btn-primary">+ Create User</button>
+                </div>
+
+                <!-- Create User Form -->
+                <div id="createUserForm" class="card form-container" style="display: none;">
+                    <h3>Create New User</h3>
+                    <form id="userFormElement">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="userName">Name</label>
+                                <input type="text" id="userName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userEmail">Email</label>
+                                <input type="email" id="userEmail" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="userRole">Role</label>
+                                <select id="userRole" required>
+                                    <option value="">Select Role</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="marketing">Marketing</option>
+                                    <option value="support">Support</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-buttons">
+                            <button type="submit" class="btn btn-primary">Create User</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleUserForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Users Table -->
+                <div class="card table-container">
+                    <table id="usersTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Enquiries Tab -->
+            <section id="enquiries" class="tab-content">
+                <div class="section-header">
+                    <h2>Enquiries</h2>
+                </div>
+
+                <div id="enquiryDetail" class="card" style="display: none;">
+                    <button class="btn btn-secondary" onclick="closeEnquiryDetail()">← Back to List</button>
+                    <div class="detail-content" id="enquiryDetailContent"></div>
+                </div>
+
+                <div id="enquiryList" class="card table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Contact</th>
+                                <th>Company</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="enquiriesTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Support Tickets Tab -->
+            <section id="support" class="tab-content">
+                <div class="section-header">
+                    <h2>Support Tickets</h2>
+                </div>
+
+                <div id="ticketDetail" class="card" style="display: none;">
+                    <button class="btn btn-secondary" onclick="closeTicketDetail()">← Back to List</button>
+                    <div class="detail-content" id="ticketDetailContent"></div>
+                </div>
+
+                <div id="ticketList" class="card table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Contact</th>
+                                <th>Company</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticketsTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Contacts Tab -->
+            <section id="contacts" class="tab-content">
+                <div class="section-header">
+                    <h2>Contacts</h2>
+                </div>
+
+                <div class="card table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Company</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contactsTable"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin-dashboard.js"></script>
+</body>
+</html>

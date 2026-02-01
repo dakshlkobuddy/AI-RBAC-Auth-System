@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "Email CRM AI System - API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "AI Email Processing",
+      "item": [
+        {
+          "name": "1. Send Enquiry Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromEmail\": \"alice@techcompany.com\",\n  \"fromName\": \"Alice Johnson\",\n  \"subject\": \"Pricing for Enterprise Plan\",\n  \"message\": \"Hello, we're interested in your enterprise plan. What is your pricing and can you provide a quote for 50 users?\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/emails/receive",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "receive"
+              ]
+            },
+            "description": "Send an enquiry email that will be processed by AI\nExpected: Intent=enquiry, contact created as prospect, saved to enquiries table"
+          }
+        },
+        {
+          "name": "2. Send Support Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromEmail\": \"bob@company.com\",\n  \"fromName\": \"Bob Smith\",\n  \"subject\": \"Login Error\",\n  \"message\": \"I'm getting an error when I try to login. It says 'access denied'. Can you help me fix this urgent issue?\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/emails/receive",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "receive"
+              ]
+            },
+            "description": "Send a support email that will be processed by AI\nExpected: Intent=support, contact created as prospect, saved to support_tickets table"
+          }
+        },
+        {
+          "name": "3. Send Personal Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromEmail\": \"charlie@gmail.com\",\n  \"fromName\": \"Charlie Brown\",\n  \"subject\": \"Product Demo\",\n  \"message\": \"Hi, I'd like to see a demo of your product. Can you arrange a trial for me?\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/emails/receive",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "receive"
+              ]
+            },
+            "description": "Send email from Gmail that will link to 'Individual' company\nExpected: Intent=enquiry, company='Individual', customer_type='prospect'"
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Testing (Debug Endpoints)",
+      "item": [
+        {
+          "name": "Test Intent Detection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"I have a critical bug in the system that's crashing our app\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/emails/test/intent-detection",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "test",
+                "intent-detection"
+              ]
+            },
+            "description": "Test AI intent detection without saving to database\nUseful for debugging AI detection logic"
+          }
+        },
+        {
+          "name": "Test Reply Generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactName\": \"John Doe\",\n  \"intent\": \"enquiry\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/emails/test/reply-generation",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "test",
+                "reply-generation"
+              ]
+            },
+            "description": "Test AI reply generation without saving to database\nCall multiple times to see randomization in action"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Data",
+      "item": [
+        {
+          "name": "Get Processing History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/emails/history?limit=50",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get processing history with role-based filtering"
+          }
+        },
+        {
+          "name": "Get Processing Stats (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN_ADMIN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/emails/stats",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "emails",
+                "stats"
+              ]
+            },
+            "description": "Get AI processing statistics (admin only)"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "JWT_TOKEN",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "JWT_TOKEN_ADMIN",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

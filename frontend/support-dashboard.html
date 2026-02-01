@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Dashboard - Email CRM</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>CRM System</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#dashboard" class="nav-link active" data-tab="dashboard">Dashboard</a></li>
+                    <li><a href="#tickets" class="nav-link" data-tab="tickets">Support Tickets</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info" id="userInfo"></div>
+                <button id="logoutBtn" class="btn btn-danger btn-block">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="pageTitle">Dashboard</h1>
+                <div class="header-right">
+                    <span id="userDisplay"></span>
+                </div>
+            </header>
+
+            <!-- Dashboard Tab -->
+            <section id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="card stats-card">
+                        <h3>Total Tickets</h3>
+                        <p class="stat-number" id="totalTickets">0</p>
+                    </div>
+                    <div class="card stats-card">
+                        <h3>Open Tickets</h3>
+                        <p class="stat-number" id="openTickets">0</p>
+                    </div>
+                    <div class="card stats-card">
+                        <h3>In Progress</h3>
+                        <p class="stat-number" id="inProgressTickets">0</p>
+                    </div>
+                    <div class="card stats-card">
+                        <h3>Resolved</h3>
+                        <p class="stat-number" id="resolvedTickets">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Tickets Tab -->
+            <section id="tickets" class="tab-content">
+                <div class="section-header">
+                    <h2>Support Tickets</h2>
+                </div>
+
+                <div id="ticketDetail" class="card" style="display: none;">
+                    <button class="btn btn-secondary" onclick="closeTicketDetail()">← Back to List</button>
+                    <div class="detail-content" id="ticketDetailContent"></div>
+                </div>
+
+                <div id="ticketList" class="card table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Contact</th>
+                                <th>Company</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticketsTable"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/support-dashboard.js"></script>
+</body>
+</html>
