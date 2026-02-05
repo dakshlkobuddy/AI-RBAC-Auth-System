@@ -1,6 +1,7 @@
 const SupportTicket = require('../models/SupportTicket');
 const Contact = require('../models/Contact');
 const { TICKET_STATUS } = require('../config/constants');
+const { sendEmail } = require('../services/mailer');
 
 // Get all support tickets
 const getAllTickets = async () => {
@@ -39,6 +40,18 @@ const replyTicket = async (ticketId, reply) => {
     if (!reply || reply.trim() === '') {
       return { success: false, message: 'Reply message is required' };
     }
+
+    const ticket = await SupportTicket.getTicketById(ticketId);
+    if (!ticket) {
+      return { success: false, message: 'Ticket not found' };
+    }
+
+    const replySubject = `Re: ${ticket.subject || 'Your support request'}`;
+    await sendEmail({
+      to: ticket.contact_email,
+      subject: replySubject,
+      text: reply
+    });
 
     const updatedTicket = await SupportTicket.updateTicketReply(
       ticketId,

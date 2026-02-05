@@ -6,6 +6,7 @@
 const MarketingEnquiry = require('../models/MarketingEnquiry');
 const Contact = require('../models/Contact');
 const { generateAIReply } = require('../services/aiService');
+const { sendEmail } = require('../services/mailer');
 
 /**
  * Get dashboard statistics
@@ -115,6 +116,14 @@ exports.sendEnquiryReply = async (req, res) => {
       });
     }
     
+    // Send reply email
+    const replySubject = `Re: ${enquiry.subject || 'Your enquiry'}`;
+    await sendEmail({
+      to: enquiry.email || enquiry.contact_email,
+      subject: replySubject,
+      text: reply
+    });
+
     // Update enquiry with reply and change status to replied
     const updatedEnquiry = await MarketingEnquiry.updateEnquiryReply(id, reply);
 

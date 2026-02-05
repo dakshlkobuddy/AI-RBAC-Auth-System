@@ -88,7 +88,7 @@ async function processMessage(message) {
   }
 
   const phone = extractPhone(messageText);
-  const aiResult = aiService.processIncomingEmail({
+  const aiResult = await aiService.processIncomingEmail({
     fromEmail,
     fromName,
     subject,
@@ -103,6 +103,8 @@ async function processMessage(message) {
       phone,
       subject,
       message: messageText,
+      sentimentScore: aiResult.sentiment?.score,
+      sentimentLabel: aiResult.sentiment?.label,
       messageId,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,

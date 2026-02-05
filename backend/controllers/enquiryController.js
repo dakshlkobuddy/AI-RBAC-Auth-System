@@ -1,5 +1,6 @@
 const Enquiry = require('../models/Enquiry');
 const Contact = require('../models/Contact');
+const { sendEmail } = require('../services/mailer');
 
 /**
  * Get all enquiries
@@ -69,6 +70,13 @@ const replyEnquiry = async (enquiryId, reply) => {
     if (!enquiry) {
       return { success: false, message: 'Enquiry not found' };
     }
+
+    const replySubject = `Re: ${enquiry.subject || 'Your enquiry'}`;
+    await sendEmail({
+      to: enquiry.contact_email,
+      subject: replySubject,
+      text: reply
+    });
 
     const updatedEnquiry = await Enquiry.updateEnquiryReply(
       enquiryId,

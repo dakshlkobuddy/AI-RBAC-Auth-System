@@ -4,9 +4,10 @@
  * No paid APIs - all logic is rule-based and deterministic
  * 
  * AI Responsibilities:
- * 1. Detect intent (ENQUIRY or SUPPORT) from email message
+ * 1. Detect intent (ENQUIRY or SUPPORT) from email subject + message
  * 2. Generate professional, human-like reply drafts
- * 3. Never send emails or change status automatically
+ * 3. Analyze sentiment (score + label)
+ * 4. Never send emails or change status automatically
  * 4. Only provide suggestions for humans to review/edit
  */
 
@@ -87,6 +88,28 @@ function detectIntent(message) {
   else {
     return INTENT_TYPE.OTHER;
   }
+}
+
+// ================================================================
+// SENTIMENT ANALYSIS (NLP)
+// ================================================================
+const Sentiment = require('sentiment');
+const sentiment = new Sentiment();
+
+function analyzeSentiment(text) {
+  if (!text || typeof text !== 'string') {
+    return { score: 0, label: 'neutral' };
+  }
+  const result = sentiment.analyze(text);
+  // Normalize to -1..+1 range
+  const normalized = Math.max(-1, Math.min(1, result.score / 10));
+  let label = 'neutral';
+  if (normalized > 0.1) label = 'positive';
+  else if (normalized < -0.1) label = 'negative';
+  return {
+    score: Number(normalized.toFixed(2)),
+    label
+  };
 }
 
 // ================================================================
@@ -203,9 +226,9 @@ function selectRandom(array) {
  * @param {string} emailData.fromName - Sender name
  * @param {string} emailData.subject - Email subject
  * @param {string} emailData.message - Email body/message
- * @returns {object} Processing result with intent and aiReply
+ * @returns {object} Processing result with intent, aiReply, and sentiment
  */
-function processIncomingEmail(emailData) {
+async function processIncomingEmail(emailData) {
   const { fromEmail, fromName, subject, message } = emailData;
 
   // Validate input
@@ -213,9 +236,13 @@ function processIncomingEmail(emailData) {
     throw new Error('Missing required email fields: fromEmail, subject, message');
   }
 
-  // Detect intent from subject + message
+  // Detect intent from subject + message (Ollama first, fallback to keywords)
   const combinedText = `${subject}\n${message}`;
-  const intent = detectIntent(combinedText);
+  const ollamaIntent = await detectIntentWithOllama(combinedText);
+  const intent = ollamaIntent !== INTENT_TYPE.OTHER ? ollamaIntent : detectIntent(combinedText);
+
+  // Sentiment analysis
+  const sentimentResult = analyzeSentiment(combinedText);
 
   // Generate professional reply draft
   const aiReply = generateAIReply(
@@ -226,7 +253,8 @@ function processIncomingEmail(emailData) {
   return {
     intent,
     aiReply,
-    confidence: calculateConfidence(combinedText, intent)
+    confidence: calculateConfidence(combinedText, intent),
+    sentiment: sentimentResult
   };
 }
 
@@ -248,6 +276,55 @@ function calculateConfidence(message, intent) {
   return Math.round(confidence * 10) / 10; // Round to 1 decimal
 }
 
+// ================================================================
+// OLLAMA INTENT DETECTION
+// ================================================================
+async function detectIntentWithOllama(text) {
+  try {
+    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const model = process.env.OLLAMA_MODEL || 'mistral:7b';
+    const prompt = `
+You are an intent classifier.
+Classify the user's email into exactly one of these intents: "enquiry" or "support".
+Return ONLY valid JSON like: {"intent":"enquiry"} or {"intent":"support"}.
+Email:
+${text}
+`;
+    const response = await fetch(`${baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      return INTENT_TYPE.OTHER;
+    }
+
+    const data = await response.json();
+    const raw = (data.response || '').trim();
+    const parsed = safeJsonParse(raw);
+    const intent = parsed?.intent;
+    if (intent === INTENT_TYPE.ENQUIRY || intent === INTENT_TYPE.SUPPORT) {
+      return intent;
+    }
+    return INTENT_TYPE.OTHER;
+  } catch (error) {
+    return INTENT_TYPE.OTHER;
+  }
+}
+
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   // Main processing function
   processIncomingEmail,
@@ -265,5 +342,6 @@ module.exports = {
 
   // Utilities
   selectRandom,
-  calculateConfidence
+  calculateConfidence,
+  analyzeSentiment
 };

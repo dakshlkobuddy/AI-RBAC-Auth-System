@@ -110,6 +110,10 @@ class APIClient {
     return this.request('POST', `/support/tickets/${ticketId}/reply`, { reply });
   }
 
+  async resolveTicket(ticketId) {
+    return this.request('POST', `/support/tickets/${ticketId}/resolve`);
+  }
+
   // Email APIs
   async receiveEmail(senderEmail, senderName, subject, message) {
     return this.request('POST', '/emails/receive', {

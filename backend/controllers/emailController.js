@@ -35,7 +35,7 @@ exports.receiveEmail = async (req, res) => {
     }
 
     // Step 1: Run AI to detect intent and generate reply
-    const aiResult = aiService.processIncomingEmail({
+    const aiResult = await aiService.processIncomingEmail({
       fromEmail,
       fromName,
       subject,
@@ -48,6 +48,8 @@ exports.receiveEmail = async (req, res) => {
       fromName,
       subject,
       message,
+      sentimentScore: aiResult.sentiment?.score,
+      sentimentLabel: aiResult.sentiment?.label,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,
       confidence: aiResult.confidence
@@ -62,7 +64,8 @@ exports.receiveEmail = async (req, res) => {
         aiProcessing: {
           intent: aiResult.intent,
           confidence: aiResult.confidence,
-          draftReply: aiResult.aiReply
+          draftReply: aiResult.aiReply,
+          sentiment: aiResult.sentiment
         }
       }
     });
@@ -122,7 +125,7 @@ exports.receiveMailgunWebhook = async (req, res) => {
 
     const phone = extractPhone(message);
 
-    const aiResult = aiService.processIncomingEmail({
+    const aiResult = await aiService.processIncomingEmail({
       fromEmail,
       fromName,
       subject,
@@ -135,6 +138,8 @@ exports.receiveMailgunWebhook = async (req, res) => {
       phone,
       subject,
       message,
+      sentimentScore: aiResult.sentiment?.score,
+      sentimentLabel: aiResult.sentiment?.label,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,
       confidence: aiResult.confidence
@@ -148,7 +153,8 @@ exports.receiveMailgunWebhook = async (req, res) => {
         aiProcessing: {
           intent: aiResult.intent,
           confidence: aiResult.confidence,
-          draftReply: aiResult.aiReply
+          draftReply: aiResult.aiReply,
+          sentiment: aiResult.sentiment
         }
       }
     });

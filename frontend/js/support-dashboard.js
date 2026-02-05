@@ -93,6 +93,11 @@ async function loadTickets(tickets) {
   const tbody = document.getElementById('ticketsTable');
   if (!tbody) return;
 
+  if (!tickets || tickets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No support tickets found</td></tr>';
+    return;
+  }
+
   tbody.innerHTML = '';
   tickets.forEach(ticket => {
     const row = document.createElement('tr');
@@ -100,6 +105,7 @@ async function loadTickets(tickets) {
       <td>${ticket.subject}</td>
       <td>${ticket.contact_name}</td>
       <td>${ticket.company_name || 'N/A'}</td>
+      <td><span class="badge badge-${ticket.customer_type}">${ticket.customer_type}</span></td>
       <td><span class="status-badge ${ticket.status}">${ticket.status}</span></td>
       <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
       <td>
@@ -145,12 +151,24 @@ async function viewTicket(ticketId) {
         <textarea id="replyText" class="form-control" rows="6">${ticket.ai_reply || ''}</textarea>
       </div>
       <button class="btn btn-primary" onclick="sendTicketReply('${ticket.id}')">Send Reply</button>
+      ${ticket.status !== 'resolved' ? `<button class="btn btn-success" onclick="resolveTicket('${ticket.id}')">Resolve Ticket</button>` : ''}
     `;
 
     document.getElementById('ticketList').style.display = 'none';
     document.getElementById('ticketDetail').style.display = 'block';
   } catch (error) {
     alert('Error loading ticket: ' + error.message);
+  }
+}
+
+async function resolveTicket(ticketId) {
+  try {
+    await apiClient.resolveTicket(ticketId);
+    alert('Ticket resolved successfully');
+    closeTicketDetail();
+    loadDashboardData();
+  } catch (error) {
+    alert('Error resolving ticket: ' + error.message);
   }
 }
 

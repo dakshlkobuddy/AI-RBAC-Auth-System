@@ -18,6 +18,8 @@ class Email {
       phone,
       subject,
       message,
+      sentimentScore,
+      sentimentLabel,
       messageId,
       intent,
       aiReply,
@@ -70,7 +72,10 @@ class Email {
             subject,
             message,
             aiReply,
-            confidence
+            confidence,
+            intent,
+            sentimentScore,
+            sentimentLabel
           );
         } else {
           result = await this.saveToEnquiries(
@@ -80,7 +85,10 @@ class Email {
             subject,
             message,
             aiReply,
-            confidence
+            confidence,
+            intent,
+            sentimentScore,
+            sentimentLabel
           );
         }
 
@@ -213,7 +221,7 @@ class Email {
   /**
    * Save email as enquiry
    */
-  static async saveToEnquiries(client, contactId, companyId, subject, message, aiReply, confidence) {
+  static async saveToEnquiries(client, contactId, companyId, subject, message, aiReply, confidence, intent, sentimentScore, sentimentLabel) {
     try {
       const { v4: uuidv4 } = require('uuid');
       const enquiryId = uuidv4();
@@ -221,10 +229,10 @@ class Email {
       const query = `
         INSERT INTO enquiries (
           id, contact_id, company_id, subject, message, 
-          status, customer_type, ai_reply, created_at
+          status, customer_type, ai_reply, intent, sentiment_score, sentiment_label, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, 'new', 'prospect', $6, CURRENT_TIMESTAMP)
-        RETURNING id, subject, status, customer_type;
+        VALUES ($1, $2, $3, $4, $5, 'new', 'prospect', $6, $7, $8, $9, CURRENT_TIMESTAMP)
+        RETURNING id, subject, status, customer_type, intent, sentiment_score, sentiment_label;
       `;
 
       const result = await client.query(query, [
@@ -233,7 +241,10 @@ class Email {
         companyId,
         subject,
         message,
-        aiReply
+        aiReply,
+        intent,
+        sentimentScore,
+        sentimentLabel
       ]);
 
       return {
@@ -242,6 +253,11 @@ class Email {
         subject: result.rows[0].subject,
         status: result.rows[0].status,
         aiReply: aiReply,
+        intent: result.rows[0].intent,
+        sentiment: {
+          score: result.rows[0].sentiment_score,
+          label: result.rows[0].sentiment_label
+        },
         confidence: confidence
       };
     } catch (error) {
@@ -253,7 +269,7 @@ class Email {
   /**
    * Save email as support ticket
    */
-  static async saveToSupportTickets(client, contactId, companyId, subject, message, aiReply, confidence) {
+  static async saveToSupportTickets(client, contactId, companyId, subject, message, aiReply, confidence, intent, sentimentScore, sentimentLabel) {
     try {
       const { v4: uuidv4 } = require('uuid');
       const ticketId = uuidv4();
@@ -261,10 +277,10 @@ class Email {
       const query = `
         INSERT INTO support_tickets (
           id, contact_id, company_id, subject, issue, 
-          status, priority, ai_reply, created_at
+          status, priority, ai_reply, intent, sentiment_score, sentiment_label, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, 'open', 'medium', $6, CURRENT_TIMESTAMP)
-        RETURNING id, subject, status, priority;
+        VALUES ($1, $2, $3, $4, $5, 'open', 'medium', $6, $7, $8, $9, CURRENT_TIMESTAMP)
+        RETURNING id, subject, status, priority, intent, sentiment_score, sentiment_label;
       `;
 
       const result = await client.query(query, [
@@ -273,7 +289,10 @@ class Email {
         companyId,
         subject,
         message,
-        aiReply
+        aiReply,
+        intent,
+        sentimentScore,
+        sentimentLabel
       ]);
 
       return {
@@ -283,6 +302,11 @@ class Email {
         status: result.rows[0].status,
         priority: result.rows[0].priority,
         aiReply: aiReply,
+        intent: result.rows[0].intent,
+        sentiment: {
+          score: result.rows[0].sentiment_score,
+          label: result.rows[0].sentiment_label
+        },
         confidence: confidence
       };
     } catch (error) {

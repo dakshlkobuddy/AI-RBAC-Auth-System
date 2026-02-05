@@ -274,6 +274,7 @@ async function loadTickets(tickets) {
       <td>${ticket.subject}</td>
       <td>${ticket.contact_name}</td>
       <td>${ticket.company_name || 'N/A'}</td>
+      <td><span class="badge badge-${ticket.customer_type}">${ticket.customer_type}</span></td>
       <td><span class="status-badge ${ticket.status}">${ticket.status}</span></td>
       <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
       <td>
@@ -289,8 +290,8 @@ async function viewTicket(ticketId) {
     const response = await apiClient.getTicket(ticketId);
     const ticket = response.ticket;
 
-    const detailContent = document.getElementById('ticketDetailContent');
-    detailContent.innerHTML = `
+  const detailContent = document.getElementById('ticketDetailContent');
+  detailContent.innerHTML = `
       <h3>${ticket.subject}</h3>
       <div class="detail-row">
         <div class="detail-item">
@@ -319,6 +320,7 @@ async function viewTicket(ticketId) {
         <textarea id="replyText" class="form-control" rows="6">${ticket.ai_reply || ''}</textarea>
       </div>
       <button class="btn btn-primary" onclick="sendTicketReply('${ticket.id}')">Send Reply</button>
+      ${ticket.status !== 'resolved' ? `<button class="btn btn-success" onclick="resolveTicket('${ticket.id}')">Resolve Ticket</button>` : ''}
     `;
 
     document.getElementById('ticketList').style.display = 'none';
@@ -342,6 +344,17 @@ async function sendTicketReply(ticketId) {
     loadDashboardData();
   } catch (error) {
     alert('Error sending reply: ' + error.message);
+  }
+}
+
+async function resolveTicket(ticketId) {
+  try {
+    await apiClient.resolveTicket(ticketId);
+    alert('Ticket resolved successfully');
+    closeTicketDetail();
+    loadDashboardData();
+  } catch (error) {
+    alert('Error resolving ticket: ' + error.message);
   }
 }
 

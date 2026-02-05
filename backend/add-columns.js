@@ -18,6 +18,15 @@ async function addMissingColumns() {
     `).catch(() => {
       // Column might already exist
     });
+
+    // Add intent and sentiment columns to enquiries
+    await pool.query(`
+      ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS intent VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS sentiment_score NUMERIC,
+      ADD COLUMN IF NOT EXISTS sentiment_label VARCHAR(20)
+    `).catch(() => {
+      // Column might already exist
+    });
     
     console.log('✓ Enquiries table updated');
     
@@ -41,6 +50,15 @@ async function addMissingColumns() {
     // Add customer_type column to support_tickets
     await pool.query(`
       ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS customer_type VARCHAR(50) DEFAULT 'prospect'
+    `).catch(() => {
+      // Column might already exist
+    });
+
+    // Add intent and sentiment columns to support_tickets
+    await pool.query(`
+      ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS intent VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS sentiment_score NUMERIC,
+      ADD COLUMN IF NOT EXISTS sentiment_label VARCHAR(20)
     `).catch(() => {
       // Column might already exist
     });
