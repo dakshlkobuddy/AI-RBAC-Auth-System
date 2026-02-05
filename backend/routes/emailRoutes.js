@@ -44,6 +44,18 @@ const emailController = require('../controllers/emailController');
 router.post('/receive', emailController.receiveEmail);
 
 /**
+ * POST /api/emails/inbound/mailgun
+ *
+ * Mailgun inbound webhook
+ * Expects application/x-www-form-urlencoded
+ */
+router.post(
+  '/inbound/mailgun',
+  express.urlencoded({ extended: false }),
+  emailController.receiveMailgunWebhook
+);
+
+/**
  * GET /api/emails/history
  * 
  * Get email processing history

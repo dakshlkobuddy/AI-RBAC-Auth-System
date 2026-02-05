@@ -17,9 +17,9 @@ exports.getDashboardStats = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        totalEnquiries: stats.totalEnquiries || 0,
-        newEnquiries: stats.newEnquiries || 0,
-        repliedEnquiries: stats.repliedEnquiries || 0
+        totalEnquiries: stats.total_enquiries || 0,
+        newEnquiries: stats.new_enquiries || 0,
+        repliedEnquiries: stats.replied_enquiries || 0
       }
     });
   } catch (error) {

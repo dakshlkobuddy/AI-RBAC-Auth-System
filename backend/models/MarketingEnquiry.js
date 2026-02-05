@@ -14,11 +14,10 @@ class MarketingEnquiry {
     try {
       const query = `
         SELECT
-          COUNT(*) as totalEnquiries,
-          SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as newEnquiries,
-          SUM(CASE WHEN status = 'replied' THEN 1 ELSE 0 END) as repliedEnquiries
-        FROM enquiries
-        WHERE deleted_at IS NULL;
+          COUNT(*) as total_enquiries,
+          SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_enquiries,
+          SUM(CASE WHEN status = 'replied' THEN 1 ELSE 0 END) as replied_enquiries
+        FROM enquiries;
       `;
 
       const result = await pool.query(query);
@@ -43,15 +42,14 @@ class MarketingEnquiry {
           e.status,
           e.customer_type,
           e.ai_reply,
-          e.created_at as date,
+          e.created_at,
           c.name as contact_name,
           c.email,
           c.customer_type as contact_customer_type,
-          co.name as company_name
+          co.company_name as company_name
         FROM enquiries e
         INNER JOIN contacts c ON e.contact_id = c.id
         INNER JOIN companies co ON e.company_id = co.id
-        WHERE e.deleted_at IS NULL
         ORDER BY e.created_at DESC;
       `;
 
@@ -83,13 +81,12 @@ class MarketingEnquiry {
           c.name as contact_name,
           c.email,
           c.customer_type as contact_customer_type,
-          co.name as company_name,
-          co.email as company_email,
-          co.phone as company_phone
+          co.company_name as company_name,
+          co.website as company_website
         FROM enquiries e
         INNER JOIN contacts c ON e.contact_id = c.id
         INNER JOIN companies co ON e.company_id = co.id
-        WHERE e.id = $1 AND e.deleted_at IS NULL;
+        WHERE e.id = $1;
       `;
 
       const result = await pool.query(query, [id]);
@@ -112,7 +109,7 @@ class MarketingEnquiry {
           ai_reply = $1,
           status = 'replied',
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2 AND deleted_at IS NULL
+        WHERE id = $2
         RETURNING *;
       `;
 
@@ -135,7 +132,7 @@ class MarketingEnquiry {
         SET
           status = 'closed',
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1 AND deleted_at IS NULL
+        WHERE id = $1
         RETURNING *;
       `;
 
@@ -158,7 +155,7 @@ class MarketingEnquiry {
         SET
           customer_type = $1,
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2 AND deleted_at IS NULL
+        WHERE id = $2
         RETURNING *;
       `;
 
@@ -181,7 +178,6 @@ class MarketingEnquiry {
           status,
           COUNT(*) as count
         FROM enquiries
-        WHERE deleted_at IS NULL
         GROUP BY status;
       `;
 
@@ -204,7 +200,6 @@ class MarketingEnquiry {
           customer_type,
           COUNT(*) as count
         FROM contacts
-        WHERE deleted_at IS NULL
         GROUP BY customer_type;
       `;
 

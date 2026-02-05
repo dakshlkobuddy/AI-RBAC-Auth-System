@@ -15,8 +15,10 @@ class Email {
     const {
       fromEmail,
       fromName,
+      phone,
       subject,
       message,
+      messageId,
       intent,
       aiReply,
       confidence
@@ -29,11 +31,33 @@ class Email {
       try {
         await client.query('BEGIN');
 
+        // Step 0: Deduplicate by message_id if provided
+        if (messageId) {
+          const insertResult = await client.query(
+            `
+            INSERT INTO processed_emails (message_id, processed_at)
+            VALUES ($1, CURRENT_TIMESTAMP)
+            ON CONFLICT (message_id) DO NOTHING
+            RETURNING message_id
+            `,
+            [messageId]
+          );
+
+          if (insertResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return {
+              success: true,
+              skipped: true,
+              message: 'Email already processed'
+            };
+          }
+        }
+
         // Step 1: Find or create company
         const company = await this.findOrCreateCompany(client, fromEmail);
 
         // Step 2: Find or create contact
-        const contact = await this.findOrCreateContact(client, fromEmail, fromName, company.id);
+        const contact = await this.findOrCreateContact(client, fromEmail, fromName, company.id, phone);
 
         // Step 3: Save email to appropriate table (enquiry or support_ticket)
         let result;
@@ -102,7 +126,7 @@ class Email {
       }
 
       // Check if company exists
-      let query = 'SELECT id, name FROM companies WHERE name = $1 AND deleted_at IS NULL LIMIT 1';
+      let query = 'SELECT id, company_name FROM companies WHERE company_name = $1 LIMIT 1';
       let result = await client.query(query, [companyName]);
 
       if (result.rows.length > 0) {
@@ -114,9 +138,9 @@ class Email {
       const companyId = uuidv4();
 
       query = `
-        INSERT INTO companies (id, name, email, created_at)
+        INSERT INTO companies (id, company_name, website, created_at)
         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-        RETURNING id, name;
+        RETURNING id, company_name;
       `;
 
       result = await client.query(query, [companyId, companyName, domain]);
@@ -131,17 +155,28 @@ class Email {
    * Find or create contact from email
    * New contacts are marked as 'prospect'
    */
-  static async findOrCreateContact(client, email, name, companyId) {
+  static async findOrCreateContact(client, email, name, companyId, phone = null) {
     try {
       // Check if contact exists
       let query = `
         SELECT id, name, email, customer_type FROM contacts 
-        WHERE email = $1 AND deleted_at IS NULL LIMIT 1
+        WHERE email = $1 LIMIT 1
       `;
       let result = await client.query(query, [email]);
 
       if (result.rows.length > 0) {
-        return result.rows[0];
+        const existing = result.rows[0];
+        if (phone && !existing.phone) {
+          const updateQuery = `
+            UPDATE contacts
+            SET phone = $1
+            WHERE id = $2
+            RETURNING id, name, email, customer_type
+          `;
+          const updateResult = await client.query(updateQuery, [phone, existing.id]);
+          return updateResult.rows[0] || existing;
+        }
+        return existing;
       }
 
       // Create new contact as prospect
@@ -152,12 +187,12 @@ class Email {
       let contactName = name || email.split('@')[0];
 
       query = `
-        INSERT INTO contacts (id, company_id, name, email, customer_type, created_at)
-        VALUES ($1, $2, $3, $4, 'prospect', CURRENT_TIMESTAMP)
+        INSERT INTO contacts (id, company_id, name, email, phone, customer_type, created_at)
+        VALUES ($1, $2, $3, $4, $5, 'prospect', CURRENT_TIMESTAMP)
         RETURNING id, name, email, customer_type;
       `;
 
-      result = await client.query(query, [contactId, companyId, contactName, email]);
+      result = await client.query(query, [contactId, companyId, contactName, email, phone]);
       return result.rows[0];
     } catch (error) {
       console.error('Error finding or creating contact:', error);
@@ -256,11 +291,10 @@ class Email {
           'enquiry' as type,
           e.id, e.subject, e.message, e.status, 
           c.name as contact_name, c.email,
-          co.name as company_name, e.created_at
+          co.company_name as company_name, e.created_at
         FROM enquiries e
         JOIN contacts c ON e.contact_id = c.id
         JOIN companies co ON e.company_id = co.id
-        WHERE e.deleted_at IS NULL
         
         UNION ALL
         
@@ -268,11 +302,10 @@ class Email {
           'support' as type,
           st.id, st.subject, st.issue as message, st.status,
           c.name as contact_name, c.email,
-          co.name as company_name, st.created_at
+          co.company_name as company_name, st.created_at
         FROM support_tickets st
         JOIN contacts c ON st.contact_id = c.id
         JOIN companies co ON st.company_id = co.id
-        WHERE st.deleted_at IS NULL
         
         ORDER BY created_at DESC
         LIMIT $1;
@@ -298,9 +331,9 @@ class Email {
           COUNT(DISTINCT CASE WHEN status = 'new' THEN id END) as new_enquiries,
           COUNT(DISTINCT CASE WHEN status = 'open' THEN id END) as open_tickets
         FROM (
-          SELECT 'enquiry' as type, id, status FROM enquiries WHERE deleted_at IS NULL
+          SELECT 'enquiry' as type, id, status FROM enquiries
           UNION ALL
-          SELECT 'support' as type, id, status FROM support_tickets WHERE deleted_at IS NULL
+          SELECT 'support' as type, id, status FROM support_tickets
         ) as all_items;
       `;
 

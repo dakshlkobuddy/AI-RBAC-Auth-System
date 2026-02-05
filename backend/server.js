@@ -11,6 +11,7 @@ const supportTicketRoutes = require('./routes/supportTicketRoutes');
 const emailRoutes = require('./routes/emailRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const marketingRoutes = require('./routes/marketingRoutes');
+const { startImapPolling } = require('./services/imapService');
 
 const app = express();
 
@@ -49,4 +50,5 @@ app.listen(PORT, () => {
 ║     Server running on http://localhost:${PORT}              ║
 ╚════════════════════════════════════════════════════════╝
   `);
+  startImapPolling();
 });

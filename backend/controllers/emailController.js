@@ -13,6 +13,7 @@
 
 const aiService = require('../services/aiService');
 const Email = require('../models/Email');
+const crypto = require('crypto');
 
 /**
  * Process incoming email
@@ -75,6 +76,111 @@ exports.receiveEmail = async (req, res) => {
   }
 };
 
+/**
+ * Process inbound email webhook from Mailgun
+ *
+ * Expects application/x-www-form-urlencoded payload
+ * Uses MAILGUN_API_KEY (optional) to verify signature if provided
+ */
+exports.receiveMailgunWebhook = async (req, res) => {
+  try {
+    const signature = req.body?.signature;
+    const timestamp = req.body?.timestamp;
+    const token = req.body?.token;
+
+    if (process.env.MAILGUN_API_KEY && signature && timestamp && token) {
+      const hmac = crypto
+        .createHmac('sha256', process.env.MAILGUN_API_KEY)
+        .update(timestamp + token)
+        .digest('hex');
+
+      if (hmac !== signature) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid Mailgun signature'
+        });
+      }
+    }
+
+    const fromHeader = req.body?.from || '';
+    const sender = req.body?.sender || '';
+    const fromEmail = extractEmail(sender || fromHeader);
+    const fromName = extractName(fromHeader) || fromEmail?.split('@')[0] || 'Customer';
+    const subject = req.body?.subject || '(no subject)';
+    const message =
+      req.body?.['body-plain'] ||
+      req.body?.['stripped-text'] ||
+      req.body?.['body-html'] ||
+      '';
+
+    if (!fromEmail || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields in Mailgun payload'
+      });
+    }
+
+    const phone = extractPhone(message);
+
+    const aiResult = aiService.processIncomingEmail({
+      fromEmail,
+      fromName,
+      subject,
+      message
+    });
+
+    const saveResult = await Email.saveIncomingEmail({
+      fromEmail,
+      fromName,
+      phone,
+      subject,
+      message,
+      intent: aiResult.intent,
+      aiReply: aiResult.aiReply,
+      confidence: aiResult.confidence
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Mailgun webhook processed successfully',
+      data: {
+        ...saveResult.data,
+        aiProcessing: {
+          intent: aiResult.intent,
+          confidence: aiResult.confidence,
+          draftReply: aiResult.aiReply
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error processing Mailgun webhook:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process Mailgun webhook',
+      error: error.message
+    });
+  }
+};
+
+function extractEmail(value) {
+  if (!value) return '';
+  const match = value.match(/<([^>]+)>/);
+  if (match && match[1]) return match[1].trim();
+  const emailMatch = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return emailMatch ? emailMatch[0] : value.trim();
+}
+
+function extractName(value) {
+  if (!value) return '';
+  const match = value.match(/^(.*?)\s*</);
+  return match ? match[1].trim().replace(/(^"|"$)/g, '') : '';
+}
+
+function extractPhone(text) {
+  if (!text) return null;
+  const phoneMatch = text.match(/(\+?\d[\d\s().-]{7,}\d)/);
+  return phoneMatch ? phoneMatch[1].trim() : null;
+}
 /**
  * Get email processing history
  * Shows all processed emails (enquiries and support tickets)

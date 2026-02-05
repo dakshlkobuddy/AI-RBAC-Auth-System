@@ -113,8 +113,8 @@ class APIClient {
   // Email APIs
   async receiveEmail(senderEmail, senderName, subject, message) {
     return this.request('POST', '/emails/receive', {
-      senderEmail,
-      senderName,
+      fromEmail: senderEmail,
+      fromName: senderName,
       subject,
       message,
     });

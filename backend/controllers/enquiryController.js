@@ -1,38 +1,63 @@
 const Enquiry = require('../models/Enquiry');
-const { ENQUIRY_STATUS } = require('../config/constants');
 
-// Get all enquiries
-const getAllEnquiries = async () => {
-  try {
-    const enquiries = await Enquiry.getAllEnquiries();
-    return {
-      success: true,
-      enquiries,
-    };
-  } catch (error) {
-    console.error('Get enquiries error:', error);
-    throw error;
-  }
+/**
+ * Get all enquiries
+ */
+const getAllEnquiries = async (req, res) => {
+    try {
+        const enquiries = await Enquiry.getAllEnquiries();
+
+        const responseData = {
+            success: true,
+            count: enquiries.length,
+            enquiries
+        };
+
+        if (res && typeof res.status === 'function') {
+            return res.status(200).json(responseData);
+        }
+        
+        return responseData; 
+    } catch (error) {
+        console.error('Error in getAllEnquiries:', error);
+        if (res && typeof res.status === 'function') {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+        throw error;
+    }
 };
 
-// Get enquiry by ID
-const getEnquiryById = async (enquiryId) => {
+/**
+ * Get enquiry by ID
+ */
+const getEnquiryById = async (req, res) => {
   try {
-    const enquiry = await Enquiry.getEnquiryById(enquiryId);
+    const id = req.params ? req.params.id : req; 
+    const enquiry = await Enquiry.getEnquiryById(id);
+    
     if (!enquiry) {
+      if (res && typeof res.status === 'function') {
+          return res.status(404).json({ success: false, message: 'Enquiry not found' });
+      }
       return { success: false, message: 'Enquiry not found' };
     }
-    return {
-      success: true,
-      enquiry,
-    };
+
+    if (res && typeof res.status === 'function') {
+        return res.status(200).json({ success: true, enquiry });
+    }
+    return { success: true, enquiry };
   } catch (error) {
     console.error('Get enquiry error:', error);
+    if (res && typeof res.status === 'function') {
+        return res.status(500).json({ success: false, error: error.message });
+    }
     throw error;
   }
 };
 
-// Reply to enquiry (update AI reply and mark as replied)
+/**
+ * Reply to an enquiry
+ */
 const replyEnquiry = async (enquiryId, reply) => {
   try {
     if (!reply || reply.trim() === '') {
@@ -44,6 +69,10 @@ const replyEnquiry = async (enquiryId, reply) => {
       reply,
       new Date()
     );
+
+    if (!updatedEnquiry) {
+      return { success: false, message: 'Enquiry not found' };
+    }
 
     return {
       success: true,
@@ -59,5 +88,5 @@ const replyEnquiry = async (enquiryId, reply) => {
 module.exports = {
   getAllEnquiries,
   getEnquiryById,
-  replyEnquiry,
+  replyEnquiry
 };
