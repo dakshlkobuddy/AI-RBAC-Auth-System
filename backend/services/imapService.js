@@ -45,16 +45,45 @@ async function processMessage(message) {
     ...(parsed.bcc?.value || []),
   ];
   const recipientEmails = recipients.map((r) => (r.address || '').toLowerCase());
+  const deliveredTo = [
+    parsed.headers?.get('delivered-to'),
+    parsed.headers?.get('x-original-to'),
+    parsed.headers?.get('to'),
+  ]
+    .filter(Boolean)
+    .map((v) => String(v).toLowerCase());
   const sinceEnv = process.env.IMAP_SINCE;
   const sinceDate = sinceEnv ? new Date(sinceEnv) : null;
+  const debug = String(process.env.IMAP_DEBUG || 'false') === 'true';
 
   if (!fromEmail || !messageText) {
+    if (debug) console.log('[IMAP] Skipped message: missing from or body', { subject });
     return { skipped: true, reason: 'Missing fromEmail or message body' };
   }
-  if (companyEmail && !recipientEmails.includes(companyEmail)) {
-    return { skipped: true, reason: 'Not addressed to company mailbox' };
+  if (companyEmail) {
+    const match =
+      recipientEmails.includes(companyEmail) ||
+      deliveredTo.some((v) => v.includes(companyEmail));
+    if (!match) {
+      if (debug) {
+        console.log('[IMAP] Skipped message: not addressed to company mailbox', {
+          subject,
+          fromEmail,
+          recipientEmails,
+          deliveredTo,
+        });
+      }
+      return { skipped: true, reason: 'Not addressed to company mailbox' };
+    }
   }
   if (sinceDate && receivedDate && receivedDate < sinceDate) {
+    if (debug) {
+      console.log('[IMAP] Skipped message: older than IMAP_SINCE', {
+        subject,
+        receivedDate,
+        sinceDate,
+      });
+    }
     return { skipped: true, reason: 'Message is older than IMAP_SINCE' };
   }
 
@@ -66,17 +95,44 @@ async function processMessage(message) {
     message: messageText
   });
 
-  const saveResult = await Email.saveIncomingEmail({
-    fromEmail,
-    fromName,
-    phone,
-    subject,
-    message: messageText,
-    messageId,
-    intent: aiResult.intent,
-    aiReply: aiResult.aiReply,
-    confidence: aiResult.confidence
-  });
+  let saveResult;
+  try {
+    saveResult = await Email.saveIncomingEmail({
+      fromEmail,
+      fromName,
+      phone,
+      subject,
+      message: messageText,
+      messageId,
+      intent: aiResult.intent,
+      aiReply: aiResult.aiReply,
+      confidence: aiResult.confidence
+    });
+  } catch (error) {
+    console.error('[IMAP] Failed to save email:', {
+      subject,
+      fromEmail,
+      messageId,
+      error: error.message
+    });
+    throw error;
+  }
+
+  if (debug) {
+    console.log('[IMAP] Processed message', {
+      subject,
+      fromEmail,
+      messageId,
+      intent: aiResult.intent,
+      saved: !saveResult?.skipped,
+    });
+    if (saveResult?.skipped) {
+      console.log('[IMAP] Skipped saving (deduped)', {
+        subject,
+        messageId
+      });
+    }
+  }
 
   return { success: true, data: saveResult.data };
 }
@@ -102,11 +158,25 @@ async function pollMailbox() {
       ? { since: sinceDate }
       : { all: true };
     const uids = await client.search(searchCriteria);
+    const debug = String(process.env.IMAP_DEBUG || 'false') === 'true';
+    if (debug) {
+      console.log('[IMAP] Search result', {
+        criteria: searchCriteria,
+        count: uids.length
+      });
+    }
 
-    for await (const message of client.fetch(uids, { uid: true, source: true })) {
+    for (const uid of uids) {
       try {
-        await processMessage(message);
-        await client.messageFlagsAdd(message.uid, ['\\Seen']);
+        const message = await client.fetchOne(uid, { uid: true, source: true });
+        if (!message || !message.source) {
+          if (debug) {
+            console.log('[IMAP] Skipped message: missing source', { uid });
+          }
+          continue;
+        }
+        await processMessage({ ...message, uid });
+        await client.messageFlagsAdd(uid, ['\\Seen']);
       } catch (error) {
         console.error('[IMAP] Failed to process message:', error.message);
       }

@@ -1,4 +1,5 @@
 const Enquiry = require('../models/Enquiry');
+const Contact = require('../models/Contact');
 
 /**
  * Get all enquiries
@@ -62,6 +63,11 @@ const replyEnquiry = async (enquiryId, reply) => {
   try {
     if (!reply || reply.trim() === '') {
       return { success: false, message: 'Reply message is required' };
+    }
+
+    const enquiry = await Enquiry.getEnquiryById(enquiryId);
+    if (!enquiry) {
+      return { success: false, message: 'Enquiry not found' };
     }
 
     const updatedEnquiry = await Enquiry.updateEnquiryReply(

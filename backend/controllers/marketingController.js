@@ -116,12 +116,7 @@ exports.sendEnquiryReply = async (req, res) => {
     
     // Update enquiry with reply and change status to replied
     const updatedEnquiry = await MarketingEnquiry.updateEnquiryReply(id, reply);
-    
-    // Upgrade customer type if prospect
-    if (enquiry.customer_type === 'prospect') {
-      await MarketingEnquiry.updateCustomerType(enquiry.contact_id, 'customer');
-    }
-    
+
     res.status(200).json({
       success: true,
       message: 'Reply sent successfully',
@@ -155,6 +150,21 @@ exports.closeEnquiry = async (req, res) => {
     
     // Update status to closed
     const updatedEnquiry = await MarketingEnquiry.closeEnquiry(id);
+
+    // Upgrade customer type if needed
+    if (enquiry.contact_customer_type === 'prospect') {
+      try {
+        await MarketingEnquiry.updateCustomerType(enquiry.contact_id, 'customer');
+      } catch (updateError) {
+        console.error('Failed to update customer type on close:', updateError);
+      }
+    } else if (enquiry.contact_customer_type === 'customer') {
+      try {
+        await MarketingEnquiry.updateCustomerType(enquiry.contact_id, 'client');
+      } catch (updateError) {
+        console.error('Failed to update customer type on close:', updateError);
+      }
+    }
     
     res.status(200).json({
       success: true,

@@ -62,10 +62,23 @@ const updateContact = async (contactId, name, email, phone, customerType) => {
   return result.rows[0];
 };
 
+// Update customer type only
+const updateCustomerType = async (contactId, customerType) => {
+  const query = `
+    UPDATE contacts
+    SET customer_type = $1
+    WHERE id = $2
+    RETURNING id, name, email, phone, company_id, customer_type, created_at
+  `;
+  const result = await pool.query(query, [customerType, contactId]);
+  return result.rows[0];
+};
+
 module.exports = {
   createContact,
   getContactById,
   getContactByEmail,
   getAllContacts,
   updateContact,
+  updateCustomerType,
 };

@@ -166,16 +166,31 @@ class Email {
 
       if (result.rows.length > 0) {
         const existing = result.rows[0];
-        if (phone && !existing.phone) {
+        const historyResult = await client.query(
+          `
+          SELECT
+            (SELECT COUNT(*) FROM enquiries WHERE contact_id = $1) +
+            (SELECT COUNT(*) FROM support_tickets WHERE contact_id = $1) AS total
+          `,
+          [existing.id]
+        );
+        const hasHistory = Number(historyResult.rows[0]?.total || 0) > 0;
+        const shouldPromote = existing.customer_type === 'prospect' && hasHistory;
+        const shouldUpdatePhone = phone && !existing.phone;
+
+        if (shouldPromote || shouldUpdatePhone) {
           const updateQuery = `
             UPDATE contacts
-            SET phone = $1
+            SET
+              phone = COALESCE($1, phone),
+              customer_type = CASE WHEN customer_type = 'prospect' THEN 'customer' ELSE customer_type END
             WHERE id = $2
             RETURNING id, name, email, customer_type
           `;
-          const updateResult = await client.query(updateQuery, [phone, existing.id]);
+          const updateResult = await client.query(updateQuery, [phone || null, existing.id]);
           return updateResult.rows[0] || existing;
         }
+
         return existing;
       }
 

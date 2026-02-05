@@ -299,20 +299,7 @@ async function sendEnquiryReply(enquiryId) {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/marketing/enquiries/${enquiryId}/reply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ reply: reply.trim() })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to send reply');
-    }
-
-    const data = await response.json();
+    const data = await apiClient.replyEnquiry(enquiryId, reply.trim());
     
     if (data.success) {
       alert('Reply sent successfully!');

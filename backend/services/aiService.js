@@ -213,8 +213,9 @@ function processIncomingEmail(emailData) {
     throw new Error('Missing required email fields: fromEmail, subject, message');
   }
 
-  // Detect intent from the message
-  const intent = detectIntent(message);
+  // Detect intent from subject + message
+  const combinedText = `${subject}\n${message}`;
+  const intent = detectIntent(combinedText);
 
   // Generate professional reply draft
   const aiReply = generateAIReply(
@@ -225,7 +226,7 @@ function processIncomingEmail(emailData) {
   return {
     intent,
     aiReply,
-    confidence: calculateConfidence(message, intent)
+    confidence: calculateConfidence(combinedText, intent)
   };
 }
 

@@ -40,7 +40,7 @@ class MarketingEnquiry {
           e.subject,
           e.message,
           e.status,
-          e.customer_type,
+          c.customer_type as customer_type,
           e.ai_reply,
           e.created_at,
           c.name as contact_name,
