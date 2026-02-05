@@ -59,6 +59,18 @@ const updateTicketStatus = async (ticketId, status) => {
   return result.rows[0];
 };
 
+// Update ticket customer type (optional sync with contacts)
+const updateTicketCustomerType = async (ticketId, customerType) => {
+  const query = `
+    UPDATE support_tickets
+    SET customer_type = $1
+    WHERE id = $2
+    RETURNING id, contact_id, subject, customer_type, updated_at
+  `;
+  const result = await pool.query(query, [customerType, ticketId]);
+  return result.rows[0];
+};
+
 // Update ticket with sent reply
 const updateTicketReply = async (ticketId, aiReply, replySentAt) => {
   const query = `
@@ -76,5 +88,6 @@ module.exports = {
   getTicketById,
   getAllTickets,
   updateTicketStatus,
+  updateTicketCustomerType,
   updateTicketReply,
 };

@@ -65,4 +65,24 @@ router.post('/:ticketId/reply', authenticate, authorize(PERMISSIONS.REPLY_TICKET
   }
 });
 
+/**
+ * @route POST /api/support/tickets/:ticketId/resolve
+ * @desc Resolve a support ticket
+ * @access Private - Support, Admin
+ */
+router.post('/:ticketId/resolve', authenticate, authorize(PERMISSIONS.REPLY_TICKET), async (req, res, next) => {
+  try {
+    const { ticketId } = req.params;
+    const result = await supportTicketController.resolveTicket(ticketId);
+
+    if (!result.success) {
+      return res.status(400).json({ message: result.message });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

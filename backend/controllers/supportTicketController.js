@@ -1,4 +1,5 @@
 const SupportTicket = require('../models/SupportTicket');
+const Contact = require('../models/Contact');
 const { TICKET_STATUS } = require('../config/constants');
 
 // Get all support tickets
@@ -56,8 +57,52 @@ const replyTicket = async (ticketId, reply) => {
   }
 };
 
+// Resolve support ticket and update customer type
+const resolveTicket = async (ticketId) => {
+  try {
+    const ticket = await SupportTicket.getTicketById(ticketId);
+    if (!ticket) {
+      return { success: false, message: 'Ticket not found' };
+    }
+
+    const updatedTicket = await SupportTicket.updateTicketStatus(
+      ticketId,
+      TICKET_STATUS.RESOLVED
+    );
+
+    if (ticket.customer_type === 'prospect') {
+      try {
+        await Contact.updateCustomerType(ticket.contact_id, 'customer');
+        await SupportTicket.updateTicketCustomerType(ticketId, 'customer');
+      } catch (updateError) {
+        console.error('Failed to update customer type on resolve:', updateError);
+      }
+    }
+
+    // Promote to client if eligible
+    try {
+      const promotion = await Contact.promoteToClientIfEligible(ticket.contact_id);
+      if (promotion.updated) {
+        await SupportTicket.updateTicketCustomerType(ticketId, 'client');
+      }
+    } catch (updateError) {
+      console.error('Failed to evaluate client promotion:', updateError);
+    }
+
+    return {
+      success: true,
+      message: 'Ticket resolved successfully',
+      ticket: updatedTicket,
+    };
+  } catch (error) {
+    console.error('Resolve ticket error:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllTickets,
   getTicketById,
   replyTicket,
+  resolveTicket,
 };

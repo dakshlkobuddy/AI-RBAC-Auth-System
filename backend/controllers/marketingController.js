@@ -4,6 +4,7 @@
  */
 
 const MarketingEnquiry = require('../models/MarketingEnquiry');
+const Contact = require('../models/Contact');
 const { generateAIReply } = require('../services/aiService');
 
 /**
@@ -158,12 +159,13 @@ exports.closeEnquiry = async (req, res) => {
       } catch (updateError) {
         console.error('Failed to update customer type on close:', updateError);
       }
-    } else if (enquiry.contact_customer_type === 'customer') {
-      try {
-        await MarketingEnquiry.updateCustomerType(enquiry.contact_id, 'client');
-      } catch (updateError) {
-        console.error('Failed to update customer type on close:', updateError);
-      }
+    }
+
+    // Promote to client if eligible
+    try {
+      await Contact.promoteToClientIfEligible(enquiry.contact_id);
+    } catch (updateError) {
+      console.error('Failed to evaluate client promotion:', updateError);
     }
     
     res.status(200).json({

@@ -37,6 +37,13 @@ async function addMissingColumns() {
     `).catch(() => {
       // Column might already exist
     });
+
+    // Add customer_type column to support_tickets
+    await pool.query(`
+      ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS customer_type VARCHAR(50) DEFAULT 'prospect'
+    `).catch(() => {
+      // Column might already exist
+    });
     
     console.log('✓ Support_tickets table updated');
     

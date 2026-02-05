@@ -74,6 +74,40 @@ const updateCustomerType = async (contactId, customerType) => {
   return result.rows[0];
 };
 
+// Promote customer to client if eligibility criteria met
+const promoteToClientIfEligible = async (contactId) => {
+  const query = `
+    SELECT
+      c.customer_type,
+      c.created_at,
+      (SELECT COUNT(*) FROM support_tickets WHERE contact_id = $1 AND status = 'resolved') AS resolved_tickets,
+      (SELECT COUNT(*) FROM enquiries WHERE contact_id = $1) AS enquiries_count
+    FROM contacts c
+    WHERE c.id = $1
+  `;
+  const result = await pool.query(query, [contactId]);
+  const row = result.rows[0];
+  if (!row) return { eligible: false, updated: false };
+
+  const resolvedTickets = Number(row.resolved_tickets || 0);
+  const enquiriesCount = Number(row.enquiries_count || 0);
+  const activeDays = row.created_at
+    ? (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60 * 24)
+    : 0;
+
+  const eligible =
+    resolvedTickets >= 1 ||
+    enquiriesCount >= 2 ||
+    activeDays >= 30;
+
+  if (!eligible || row.customer_type !== 'customer') {
+    return { eligible, updated: false };
+  }
+
+  const updated = await updateCustomerType(contactId, 'client');
+  return { eligible, updated: Boolean(updated) };
+};
+
 module.exports = {
   createContact,
   getContactById,
@@ -81,4 +115,5 @@ module.exports = {
   getAllContacts,
   updateContact,
   updateCustomerType,
+  promoteToClientIfEligible,
 };

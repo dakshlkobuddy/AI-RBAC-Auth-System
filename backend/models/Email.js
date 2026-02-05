@@ -157,25 +157,20 @@ class Email {
    */
   static async findOrCreateContact(client, email, name, companyId, phone = null) {
     try {
-      // Check if contact exists
+      // Check if contact exists by email or phone
       let query = `
-        SELECT id, name, email, customer_type FROM contacts 
-        WHERE email = $1 LIMIT 1
+        SELECT id, name, email, phone, customer_type FROM contacts 
+        WHERE email = $1
+        ${phone ? 'OR phone = $2' : ''}
+        LIMIT 1
       `;
-      let result = await client.query(query, [email]);
+      let result = phone
+        ? await client.query(query, [email, phone])
+        : await client.query(query, [email]);
 
       if (result.rows.length > 0) {
         const existing = result.rows[0];
-        const historyResult = await client.query(
-          `
-          SELECT
-            (SELECT COUNT(*) FROM enquiries WHERE contact_id = $1) +
-            (SELECT COUNT(*) FROM support_tickets WHERE contact_id = $1) AS total
-          `,
-          [existing.id]
-        );
-        const hasHistory = Number(historyResult.rows[0]?.total || 0) > 0;
-        const shouldPromote = existing.customer_type === 'prospect' && hasHistory;
+        const shouldPromote = existing.customer_type === 'prospect';
         const shouldUpdatePhone = phone && !existing.phone;
 
         if (shouldPromote || shouldUpdatePhone) {
