@@ -72,13 +72,13 @@ router.get('/:userId', authenticate, async (req, res, next) => {
 router.put('/:userId', authenticate, authorize(PERMISSIONS.UPDATE_USER), async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const { name, email } = req.body;
+    const { name, email, role } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
 
-    const result = await userController.updateUser(userId, name, email);
+    const result = await userController.updateUser(userId, name, email, role);
 
     if (!result.success) {
       return res.status(400).json({ message: result.message });

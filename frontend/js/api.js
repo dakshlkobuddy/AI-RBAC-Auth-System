@@ -76,8 +76,8 @@ class APIClient {
     return this.request('GET', `/users/${userId}`);
   }
 
-  async updateUser(userId, name, email) {
-    return this.request('PUT', `/users/${userId}`, { name, email });
+  async updateUser(userId, name, email, role) {
+    return this.request('PUT', `/users/${userId}`, { name, email, role });
   }
 
   async deleteUser(userId) {

@@ -76,9 +76,18 @@ const getUserById = async (userId) => {
 };
 
 // Update user
-const updateUser = async (userId, name, email) => {
+const updateUser = async (userId, name, email, role) => {
   try {
-    const user = await User.updateUser(userId, name, email);
+    let roleId = null;
+    if (role) {
+      const roleData = await Role.getRoleByName(role);
+      if (!roleData) {
+        return { success: false, message: 'Invalid role' };
+      }
+      roleId = roleData.id;
+    }
+
+    const user = await User.updateUser(userId, name, email, roleId);
     return {
       success: true,
       message: 'User updated successfully',

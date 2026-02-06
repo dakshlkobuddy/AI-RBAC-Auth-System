@@ -64,14 +64,26 @@ const updateUserPassword = async (userId, password) => {
 };
 
 // Update user details
-const updateUser = async (userId, name, email) => {
-  const query = `
-    UPDATE users
-    SET name = $1, email = $2
-    WHERE id = $3
-    RETURNING id, name, email, role_id, is_active, created_at
-  `;
-  const result = await pool.query(query, [name, email, userId]);
+const updateUser = async (userId, name, email, roleId = null) => {
+  const query = roleId
+    ? `
+      UPDATE users
+      SET name = $1, email = $2, role_id = $3
+      WHERE id = $4
+      RETURNING id, name, email, role_id, is_active, created_at
+    `
+    : `
+      UPDATE users
+      SET name = $1, email = $2
+      WHERE id = $3
+      RETURNING id, name, email, role_id, is_active, created_at
+    `;
+
+  const params = roleId
+    ? [name, email, roleId, userId]
+    : [name, email, userId];
+
+  const result = await pool.query(query, params);
   return result.rows[0];
 };
 

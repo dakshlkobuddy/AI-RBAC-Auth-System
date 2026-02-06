@@ -3,6 +3,9 @@
  * Handles admin panel functionality
  */
 
+let editingUserId = null;
+let cachedUsers = [];
+
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   initDashboard();
@@ -45,7 +48,7 @@ function setupEventListeners() {
   // User form submission
   document.getElementById('userFormElement').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await createNewUser();
+    await submitUserForm();
   });
 }
 
@@ -66,7 +69,8 @@ async function loadDashboardData() {
     }
 
     // Load users table
-    loadUsers(users.users || []);
+    cachedUsers = users.users || [];
+    loadUsers(cachedUsers);
 
     // Load enquiries table
     loadEnquiries(enquiries.enquiries || []);
@@ -117,24 +121,38 @@ function switchTab(tabName) {
 
 function toggleUserForm() {
   const form = document.getElementById('createUserForm');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
-  if (form.style.display === 'block') {
-    document.getElementById('userFormElement').reset();
+  const isHidden = form.style.display === 'none';
+  form.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    resetUserForm();
   }
 }
 
-async function createNewUser() {
+function resetUserForm() {
+  editingUserId = null;
+  const formEl = document.getElementById('userFormElement');
+  formEl.reset();
+  document.getElementById('userFormTitle').textContent = 'Create New User';
+  document.getElementById('userFormSubmitBtn').textContent = 'Create User';
+}
+
+async function submitUserForm() {
   const name = document.getElementById('userName').value;
   const email = document.getElementById('userEmail').value;
   const role = document.getElementById('userRole').value;
 
   try {
-    await apiClient.createUser(name, email, role);
-    alert('User created successfully! Password setup email sent.');
+    if (editingUserId) {
+      await apiClient.updateUser(editingUserId, name, email, role);
+      alert('User updated successfully!');
+    } else {
+      await apiClient.createUser(name, email, role);
+      alert('User created successfully! Password setup email sent.');
+    }
     toggleUserForm();
     loadDashboardData();
   } catch (error) {
-    alert('Error creating user: ' + error.message);
+    alert('Error saving user: ' + error.message);
   }
 }
 
@@ -143,7 +161,9 @@ function loadUsers(users) {
   if (!tbody) return;
 
   tbody.innerHTML = '';
-  users.forEach(user => {
+  users
+    .filter(user => user.role_name !== 'admin')
+    .forEach(user => {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${user.name}</td>
@@ -173,7 +193,21 @@ async function deleteUserConfirm(userId) {
 }
 
 function editUser(userId) {
-  alert('Edit functionality coming soon');
+  const user = cachedUsers.find(u => u.id === userId);
+  if (!user) {
+    alert('User not found');
+    return;
+  }
+
+  editingUserId = userId;
+  document.getElementById('userName').value = user.name || '';
+  document.getElementById('userEmail').value = user.email || '';
+  document.getElementById('userRole').value = user.role_name || '';
+  document.getElementById('userFormTitle').textContent = 'Edit User';
+  document.getElementById('userFormSubmitBtn').textContent = 'Update User';
+
+  const form = document.getElementById('createUserForm');
+  form.style.display = 'block';
 }
 
 async function loadEnquiries(enquiries) {
@@ -187,6 +221,7 @@ async function loadEnquiries(enquiries) {
       <td>${enquiry.subject}</td>
       <td>${enquiry.contact_name}</td>
       <td>${enquiry.company_name || 'N/A'}</td>
+      <td><span class="badge badge-${enquiry.customer_type}">${enquiry.customer_type}</span></td>
       <td><span class="status-badge ${enquiry.status}">${enquiry.status}</span></td>
       <td>${new Date(enquiry.created_at).toLocaleDateString()}</td>
       <td>

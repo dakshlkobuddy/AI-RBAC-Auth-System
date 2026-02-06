@@ -69,7 +69,7 @@
 
                 <!-- Create User Form -->
                 <div id="createUserForm" class="card form-container" style="display: none;">
-                    <h3>Create New User</h3>
+                    <h3 id="userFormTitle">Create New User</h3>
                     <form id="userFormElement">
                         <div class="form-row">
                             <div class="form-group">
@@ -91,7 +91,7 @@
                             </div>
                         </div>
                         <div class="form-buttons">
-                            <button type="submit" class="btn btn-primary">Create User</button>
+                            <button id="userFormSubmitBtn" type="submit" class="btn btn-primary">Create User</button>
                             <button type="button" class="btn btn-secondary" onclick="toggleUserForm()">Cancel</button>
                         </div>
                     </form>
@@ -162,6 +162,7 @@
                                 <th>Subject</th>
                                 <th>Contact</th>
                                 <th>Company</th>
+                                <th>Customer Type</th>
                                 <th>Status</th>
                                 <th>Date</th>
                                 <th>Actions</th>
