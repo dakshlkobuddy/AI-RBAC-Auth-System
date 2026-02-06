@@ -108,7 +108,8 @@ async function processMessage(message) {
       messageId,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,
-      confidence: aiResult.confidence
+      confidence: aiResult.confidence,
+      extracted: aiResult.extracted
     });
   } catch (error) {
     console.error('[IMAP] Failed to save email:', {

@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   phone VARCHAR(20),
+  location VARCHAR(255),
+  product_interest TEXT,
   company_id UUID,
   customer_type VARCHAR(50) DEFAULT 'prospect',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

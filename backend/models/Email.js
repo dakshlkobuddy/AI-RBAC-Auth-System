@@ -16,6 +16,7 @@ class Email {
       fromEmail,
       fromName,
       phone,
+      extracted,
       subject,
       message,
       sentimentScore,
@@ -55,11 +56,21 @@ class Email {
           }
         }
 
+        const extractedPhone = extracted?.phone || phone || null;
+
         // Step 1: Find or create company
-        const company = await this.findOrCreateCompany(client, fromEmail);
+        const company = await this.findOrCreateCompany(client, fromEmail, extracted?.company_name);
 
         // Step 2: Find or create contact
-        const contact = await this.findOrCreateContact(client, fromEmail, fromName, company.id, phone);
+        const contact = await this.findOrCreateContact(
+          client,
+          fromEmail,
+          extracted?.name || fromName,
+          company.id,
+          extractedPhone,
+          extracted?.location || null,
+          extracted?.product_interest || null
+        );
 
         // Step 3: Save email to appropriate table (enquiry or support_ticket)
         let result;
@@ -114,7 +125,7 @@ class Email {
   /**
    * Find or create company from email domain
    */
-  static async findOrCreateCompany(client, email) {
+  static async findOrCreateCompany(client, email, extractedCompanyName = '') {
     try {
       const domain = email.split('@')[1];
       
@@ -124,7 +135,10 @@ class Email {
       let companyName = domain;
       let isPersonal = false;
 
-      if (personalDomains.includes(domain.toLowerCase())) {
+      if (extractedCompanyName && extractedCompanyName.trim().length > 1) {
+        companyName = extractedCompanyName.trim();
+        isPersonal = false;
+      } else if (personalDomains.includes(domain.toLowerCase())) {
         // Link to default "Individual" company
         companyName = 'Individual';
         isPersonal = true;
@@ -163,11 +177,11 @@ class Email {
    * Find or create contact from email
    * New contacts are marked as 'prospect'
    */
-  static async findOrCreateContact(client, email, name, companyId, phone = null) {
+  static async findOrCreateContact(client, email, name, companyId, phone = null, location = null, productInterest = null) {
     try {
       // Check if contact exists by email or phone
       let query = `
-        SELECT id, name, email, phone, customer_type FROM contacts 
+        SELECT id, name, email, phone, location, product_interest, customer_type FROM contacts 
         WHERE email = $1
         ${phone ? 'OR phone = $2' : ''}
         LIMIT 1
@@ -180,17 +194,32 @@ class Email {
         const existing = result.rows[0];
         const shouldPromote = existing.customer_type === 'prospect';
         const shouldUpdatePhone = phone && !existing.phone;
+        const shouldUpdateLocation = location && !existing.location;
+        const shouldUpdateProduct = productInterest && !existing.product_interest;
+        const emailPrefix = (existing.email || '').split('@')[0];
+        const shouldUpdateName =
+          name &&
+          (existing.name === emailPrefix || existing.name === emailPrefix.replace(/[._-]/g, ' ') || existing.name === 'Unknown');
 
-        if (shouldPromote || shouldUpdatePhone) {
+        if (shouldPromote || shouldUpdatePhone || shouldUpdateLocation || shouldUpdateProduct || shouldUpdateName) {
           const updateQuery = `
             UPDATE contacts
             SET
-              phone = COALESCE($1, phone),
+              name = COALESCE($1, name),
+              phone = COALESCE($2, phone),
+              location = COALESCE($3, location),
+              product_interest = COALESCE($4, product_interest),
               customer_type = CASE WHEN customer_type = 'prospect' THEN 'customer' ELSE customer_type END
-            WHERE id = $2
+            WHERE id = $5
             RETURNING id, name, email, customer_type
           `;
-          const updateResult = await client.query(updateQuery, [phone || null, existing.id]);
+          const updateResult = await client.query(updateQuery, [
+            name || null,
+            phone || null,
+            location || null,
+            productInterest || null,
+            existing.id
+          ]);
           return updateResult.rows[0] || existing;
         }
 
@@ -205,12 +234,20 @@ class Email {
       let contactName = name || email.split('@')[0];
 
       query = `
-        INSERT INTO contacts (id, company_id, name, email, phone, customer_type, created_at)
-        VALUES ($1, $2, $3, $4, $5, 'prospect', CURRENT_TIMESTAMP)
+        INSERT INTO contacts (id, company_id, name, email, phone, location, product_interest, customer_type, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'prospect', CURRENT_TIMESTAMP)
         RETURNING id, name, email, customer_type;
       `;
 
-      result = await client.query(query, [contactId, companyId, contactName, email, phone]);
+      result = await client.query(query, [
+        contactId,
+        companyId,
+        contactName,
+        email,
+        phone,
+        location,
+        productInterest
+      ]);
       return result.rows[0];
     } catch (error) {
       console.error('Error finding or creating contact:', error);

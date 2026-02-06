@@ -64,6 +64,17 @@ async function addMissingColumns() {
     });
     
     console.log('✓ Support_tickets table updated');
+
+    console.log('Adding missing columns to contacts table...');
+
+    await pool.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS location VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS product_interest TEXT
+    `).catch(() => {
+      // Column might already exist
+    });
+
+    console.log('✓ Contacts table updated');
     
     console.log('\n✓ All columns added successfully!');
     process.exit(0);

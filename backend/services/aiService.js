@@ -236,25 +236,44 @@ async function processIncomingEmail(emailData) {
     throw new Error('Missing required email fields: fromEmail, subject, message');
   }
 
-  // Detect intent from subject + message (Ollama first, fallback to keywords)
   const combinedText = `${subject}\n${message}`;
-  const ollamaIntent = await detectIntentWithOllama(combinedText);
-  const intent = ollamaIntent !== INTENT_TYPE.OTHER ? ollamaIntent : detectIntent(combinedText);
+
+  // Run Ollama for intent + extraction + reply
+  const aiStructured = await analyzeEmailWithOllama({
+    fromName,
+    subject,
+    message
+  });
+
+  const ollamaIntent = aiStructured?.intent;
+  const intent = ollamaIntent === INTENT_TYPE.ENQUIRY || ollamaIntent === INTENT_TYPE.SUPPORT
+    ? ollamaIntent
+    : detectIntent(combinedText);
 
   // Sentiment analysis
   const sentimentResult = analyzeSentiment(combinedText);
 
   // Generate professional reply draft
-  const aiReply = generateAIReply(
-    fromName || fromEmail.split('@')[0],
-    intent
+  const aiReply = aiStructured?.reply?.trim()
+    ? aiStructured.reply.trim()
+    : generateAIReply(
+        fromName || fromEmail.split('@')[0],
+        intent
+      );
+
+  const extracted = normalizeExtractedDetails(
+    aiStructured?.details || {},
+    fromName,
+    fromEmail,
+    message
   );
 
   return {
     intent,
     aiReply,
     confidence: calculateConfidence(combinedText, intent),
-    sentiment: sentimentResult
+    sentiment: sentimentResult,
+    extracted
   };
 }
 
@@ -282,7 +301,7 @@ function calculateConfidence(message, intent) {
 async function detectIntentWithOllama(text) {
   try {
     const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-    const model = process.env.OLLAMA_MODEL || 'mistral:7b';
+    const model = process.env.OLLAMA_MODEL || 'llama3.1:8b';
     const prompt = `
 You are an intent classifier.
 Classify the user's email into exactly one of these intents: "enquiry" or "support".
@@ -321,6 +340,86 @@ function safeJsonParse(text) {
   try {
     return JSON.parse(text);
   } catch {
+    return null;
+  }
+}
+
+function extractPhoneFromText(text) {
+  if (!text) return '';
+  const phoneMatch = text.match(/(\+?\d[\d\s().-]{7,}\d)/);
+  return phoneMatch ? phoneMatch[1].trim() : '';
+}
+
+function normalizeExtractedDetails(details, fromName, fromEmail, message) {
+  const name = details.name?.trim() || (fromName || fromEmail.split('@')[0]).trim();
+  const phone = details.phone?.trim() || extractPhoneFromText(message);
+  const companyName = details.company_name?.trim() || '';
+  const location = details.location?.trim() || '';
+  const productInterest = details.product_interest?.trim() || '';
+
+  return {
+    name,
+    phone,
+    company_name: companyName,
+    location,
+    product_interest: productInterest
+  };
+}
+
+async function analyzeEmailWithOllama({ fromName, subject, message }) {
+  try {
+    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const model = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+    const prompt = `
+You are an assistant for a CRM system.
+Task: classify intent, extract details, and draft a reply based on the email.
+Return ONLY valid JSON with this schema:
+{
+  "intent": "enquiry" | "support",
+  "details": {
+    "name": "",
+    "phone": "",
+    "company_name": "",
+    "location": "",
+    "product_interest": ""
+  },
+  "reply": ""
+}
+
+Rules:
+- intent must be exactly "enquiry" or "support"
+- keep values empty string if unknown
+- reply must be specific to the email content and not generic
+- include at least 2 concrete details from the email if available
+- avoid templated phrases like "Thank you for reaching out" unless the email is very short
+
+Sender name: ${fromName || ''}
+Subject: ${subject}
+Message: ${message}
+`;
+
+    const response = await fetch(`${baseUrl}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const raw = (data.response || '').trim();
+    const parsed = safeJsonParse(raw);
+    if (!parsed || !parsed.intent || !parsed.details || !parsed.reply) {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
     return null;
   }
 }

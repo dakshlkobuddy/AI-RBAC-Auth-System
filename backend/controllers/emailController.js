@@ -52,7 +52,8 @@ exports.receiveEmail = async (req, res) => {
       sentimentLabel: aiResult.sentiment?.label,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,
-      confidence: aiResult.confidence
+      confidence: aiResult.confidence,
+      extracted: aiResult.extracted
     });
 
     // Return result
@@ -142,7 +143,8 @@ exports.receiveMailgunWebhook = async (req, res) => {
       sentimentLabel: aiResult.sentiment?.label,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,
-      confidence: aiResult.confidence
+      confidence: aiResult.confidence,
+      extracted: aiResult.extracted
     });
 
     res.status(200).json({
