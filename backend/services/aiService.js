@@ -32,7 +32,9 @@ const SUPPORT_KEYWORDS = [
   'can\'t', 'cannot', 'doesn\'t work', 'doesn\'t', 'doesn\'t',
   'trouble', 'urgent', 'asap', 'help', 'support',
   'complaint', 'refund', 'return', 'uninstall', 'delete',
-  'login issue', 'access denied', 'error code', 'exception'
+  'login issue', 'access denied', 'error code', 'exception',
+  'login', 'log in', 'signin', 'sign in', 'access', 'restricted',
+  'permission', 'locked', 'redirected', 'redirect', 'portal', 'unable to access'
 ];
 
 /**
@@ -246,9 +248,16 @@ async function processIncomingEmail(emailData) {
   });
 
   const ollamaIntent = aiStructured?.intent;
-  const intent = ollamaIntent === INTENT_TYPE.ENQUIRY || ollamaIntent === INTENT_TYPE.SUPPORT
+  let intent = ollamaIntent === INTENT_TYPE.ENQUIRY || ollamaIntent === INTENT_TYPE.SUPPORT
     ? ollamaIntent
     : detectIntent(combinedText);
+
+  // Safety override: if strong support signals exist, force support
+  const supportHeuristic = detectIntent(combinedText);
+  const accessRegex = /(log\s*in|sign\s*in|access|portal|permission|restricted|redirect)/i;
+  if (supportHeuristic === INTENT_TYPE.SUPPORT || accessRegex.test(combinedText)) {
+    intent = INTENT_TYPE.SUPPORT;
+  }
 
   // Sentiment analysis
   const sentimentResult = analyzeSentiment(combinedText);
@@ -392,6 +401,14 @@ Rules:
 - reply must be specific to the email content and not generic
 - include at least 2 concrete details from the email if available
 - avoid templated phrases like "Thank you for reaching out" unless the email is very short
+- If the email reports an issue, error, access problem, login problem, bug, failure, or request for help, the intent MUST be "support".
+- Examples:
+  Subject: Difficulty accessing the internal dashboard
+  Message: I can't log in and keep getting redirected...
+  => intent: "support"
+  Subject: Pricing and plans
+  Message: We want to know pricing and features...
+  => intent: "enquiry"
 
 Sender name: ${fromName || ''}
 Subject: ${subject}
