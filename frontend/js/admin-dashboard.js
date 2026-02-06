@@ -234,6 +234,12 @@ async function loadEnquiries(enquiries) {
   if (!tbody) return;
 
   tbody.innerHTML = '';
+  const emptyEl = document.getElementById('enquiriesEmpty');
+  if (enquiries.length === 0) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
   enquiries.forEach(enquiry => {
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -337,6 +343,12 @@ async function loadTickets(tickets) {
   if (!tbody) return;
 
   tbody.innerHTML = '';
+  const emptyEl = document.getElementById('ticketsEmpty');
+  if (tickets.length === 0) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
   tickets.forEach(ticket => {
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -452,6 +464,12 @@ function loadContacts(contacts) {
   if (!tbody) return;
 
   tbody.innerHTML = '';
+  const emptyEl = document.getElementById('contactsEmpty');
+  if (contacts.length === 0) {
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
   contacts.forEach(contact => {
     const row = document.createElement('tr');
     row.innerHTML = `

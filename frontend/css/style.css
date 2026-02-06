@@ -339,6 +339,14 @@ body {
   overflow-x: auto;
 }
 
+.empty-state {
+  display: none;
+  text-align: center;
+  color: #7f8c8d;
+  padding: 18px 10px;
+  font-size: 14px;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;

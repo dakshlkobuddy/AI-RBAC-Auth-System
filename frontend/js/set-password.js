@@ -29,8 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
 
-    if (!newPassword || newPassword.length < 6) {
-      showError('Password must be at least 6 characters long.');
+    if (!newPassword || newPassword.length < 8) {
+      showError('Password must be at least 8 characters long.');
+      return;
+    }
+    const strongPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
+    if (!strongPassword.test(newPassword)) {
+      showError('Password must include 1 uppercase letter, 1 number, and 1 special character.');
       return;
     }
     if (newPassword !== confirmPassword) {
