@@ -39,7 +39,7 @@ const createUser = async (name, email, role) => {
     const setupToken = generatePasswordSetupToken(newUser.id);
     const setupLink = `${frontendUrl.replace(/\/$/, '')}/set-password.html?token=${encodeURIComponent(setupToken)}`;
 
-    await sendEmail({
+    sendEmail({
       to: email,
       subject: 'Set up your password',
       text: `Hello ${name},\n\nYour account has been created. Please set your password using the link below:\n\n${setupLink}\n\nThis link will expire in 24 hours.`,
@@ -49,6 +49,8 @@ const createUser = async (name, email, role) => {
         <p><a href="${setupLink}">Set your password</a></p>
         <p>This link will expire in 24 hours.</p>
       `,
+    }).catch((error) => {
+      console.error('Password setup email failed:', error.message);
     });
 
     return {

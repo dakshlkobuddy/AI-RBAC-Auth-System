@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const password = document.getElementById('password').value;
 
       try {
+        if (!isValidEmail(email)) {
+          errorMessage.textContent = 'Please enter a valid email address';
+          return;
+        }
+        if (!password || password.length < 6) {
+          errorMessage.textContent = 'Password must be at least 6 characters';
+          return;
+        }
+
         const response = await apiClient.login(email, password);
 
         if (response.success) {
@@ -33,11 +42,30 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       } catch (error) {
-        errorMessage.textContent = error.message || 'Login failed';
+        const message = (error.message || '').toLowerCase();
+        if (message.includes('invalid email or password')) {
+          errorMessage.textContent = 'Invalid Credentials';
+        } else {
+          errorMessage.textContent = error.message || 'Invalid Credentials';
+        }
       }
     });
   }
+
+  document.querySelectorAll('.toggle-password').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.textContent = isPassword ? 'Hide' : 'Show';
+    });
+  });
 });
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').toLowerCase());
+}
 
 // Logout function
 function logout() {
