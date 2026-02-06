@@ -1,19 +1,29 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
-const { ROLES } = require('../config/constants');
+const { sendEmail } = require('../services/mailer');
+const { generatePasswordSetupToken } = require('../utils/authUtils');
 
 // Create a new user (Admin only)
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').toLowerCase());
+
 const createUser = async (name, email, role) => {
   try {
     // Validate input
     if (!name || !email || !role) {
       return { success: false, message: 'Name, email, and role are required' };
     }
+    if (!isValidEmail(email)) {
+      return { success: false, message: 'Invalid email format' };
+    }
 
     // Check if user already exists
     const existingUser = await User.getUserByEmail(email);
     if (existingUser) {
       return { success: false, message: 'User with this email already exists' };
+    }
+
+    if (role === 'admin') {
+      return { success: false, message: 'Admin role cannot be created here' };
     }
 
     // Get role ID
@@ -25,8 +35,21 @@ const createUser = async (name, email, role) => {
     // Create user
     const newUser = await User.createUser(name, email, roleData.id);
 
-    // TODO: Send password setup email here
-    console.log(`[TODO] Send password setup email to ${email}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const setupToken = generatePasswordSetupToken(newUser.id);
+    const setupLink = `${frontendUrl.replace(/\/$/, '')}/set-password.html?token=${encodeURIComponent(setupToken)}`;
+
+    await sendEmail({
+      to: email,
+      subject: 'Set up your password',
+      text: `Hello ${name},\n\nYour account has been created. Please set your password using the link below:\n\n${setupLink}\n\nThis link will expire in 24 hours.`,
+      html: `
+        <p>Hello ${name},</p>
+        <p>Your account has been created. Please set your password using the link below:</p>
+        <p><a href="${setupLink}">Set your password</a></p>
+        <p>This link will expire in 24 hours.</p>
+      `,
+    });
 
     return {
       success: true,
@@ -78,8 +101,14 @@ const getUserById = async (userId) => {
 // Update user
 const updateUser = async (userId, name, email, role) => {
   try {
+    if (email && !isValidEmail(email)) {
+      return { success: false, message: 'Invalid email format' };
+    }
     let roleId = null;
     if (role) {
+      if (role === 'admin') {
+        return { success: false, message: 'Admin role cannot be assigned here' };
+      }
       const roleData = await Role.getRoleByName(role);
       if (!roleData) {
         return { success: false, message: 'Invalid role' };

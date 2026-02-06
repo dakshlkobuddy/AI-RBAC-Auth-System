@@ -142,6 +142,19 @@ async function submitUserForm() {
   const role = document.getElementById('userRole').value;
 
   try {
+    if (!name.trim()) {
+      alert('Name is required');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    if (!role) {
+      alert('Please select a role');
+      return;
+    }
+
     if (editingUserId) {
       await apiClient.updateUser(editingUserId, name, email, role);
       alert('User updated successfully!');
@@ -208,6 +221,10 @@ function editUser(userId) {
 
   const form = document.getElementById('createUserForm');
   form.style.display = 'block';
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').toLowerCase());
 }
 
 async function loadEnquiries(enquiries) {

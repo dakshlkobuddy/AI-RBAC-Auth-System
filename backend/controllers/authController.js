@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
-const { generateToken, hashPassword, comparePassword } = require('../utils/authUtils');
+const { generateToken, comparePassword, verifyPasswordSetupToken } = require('../utils/authUtils');
 
 // Admin login
 const login = async (email, password) => {
@@ -67,7 +67,22 @@ const setPassword = async (userId, password) => {
   }
 };
 
+const setPasswordWithToken = async (token, password) => {
+  try {
+    const payload = verifyPasswordSetupToken(token);
+    if (!payload) {
+      return { success: false, message: 'Invalid or expired setup link' };
+    }
+
+    return await setPassword(payload.userId, password);
+  } catch (error) {
+    console.error('Set password with token error:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   login,
   setPassword,
+  setPasswordWithToken,
 };

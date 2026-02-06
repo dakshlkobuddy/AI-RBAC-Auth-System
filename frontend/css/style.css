@@ -500,6 +500,27 @@ body {
   box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
 }
 
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-password {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  background: #f5f7fa;
+  color: var(--secondary-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.toggle-password:hover {
+  background: #e9ecef;
+}
+
 .form-control {
   width: 100%;
   padding: 10px;

@@ -53,4 +53,29 @@ router.post('/set-password/:userId', async (req, res, next) => {
   }
 });
 
+/**
+ * @route POST /api/auth/set-password
+ * @desc Set password with token
+ * @access Public (with token)
+ */
+router.post('/set-password', async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token and password are required' });
+    }
+
+    const result = await authController.setPasswordWithToken(token, password);
+
+    if (!result.success) {
+      return res.status(400).json({ message: result.message });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

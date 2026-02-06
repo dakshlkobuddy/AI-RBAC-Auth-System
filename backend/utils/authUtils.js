@@ -10,6 +10,24 @@ const generateToken = (userId, roleId) => {
   );
 };
 
+const generatePasswordSetupToken = (userId) => {
+  return jwt.sign(
+    { userId, purpose: 'password_setup' },
+    process.env.JWT_SECRET || 'your_secret_key',
+    { expiresIn: process.env.PASSWORD_SETUP_EXPIRE || '24h' }
+  );
+};
+
+const verifyPasswordSetupToken = (token) => {
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key');
+    if (!payload || payload.purpose !== 'password_setup') return null;
+    return payload;
+  } catch (error) {
+    return null;
+  }
+};
+
 // Verify JWT token
 const verifyToken = (token) => {
   try {
@@ -31,6 +49,8 @@ const comparePassword = async (password, hashedPassword) => {
 
 module.exports = {
   generateToken,
+  generatePasswordSetupToken,
+  verifyPasswordSetupToken,
   verifyToken,
   hashPassword,
   comparePassword,
