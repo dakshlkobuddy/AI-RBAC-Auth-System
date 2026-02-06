@@ -9,6 +9,8 @@ const aiService = require('./aiService');
 const Email = require('../models/Email');
 
 const DEFAULT_POLL_MS = 120000;
+let pollingInProgress = false;
+let lastProcessedUid = 0;
 
 function getImapConfig() {
   return {
@@ -141,9 +143,12 @@ async function processMessage(message) {
 }
 
 async function pollMailbox() {
+  if (pollingInProgress) return;
+  pollingInProgress = true;
   const config = getImapConfig();
   if (!config.auth.user || !config.auth.pass) {
     console.warn('[IMAP] Missing IMAP_USER or IMAP_PASS. Skipping poll.');
+    pollingInProgress = false;
     return;
   }
 
@@ -157,10 +162,16 @@ async function pollMailbox() {
 
     const sinceEnv = process.env.IMAP_SINCE;
     const sinceDate = sinceEnv ? new Date(sinceEnv) : null;
-    const searchCriteria = sinceDate
-      ? { since: sinceDate }
-      : { all: true };
-    const uids = await client.search(searchCriteria);
+    let searchCriteria;
+    if (lastProcessedUid > 0) {
+      searchCriteria = { uid: `${lastProcessedUid + 1}:*` };
+    } else if (sinceDate) {
+      searchCriteria = { since: sinceDate };
+    } else {
+      searchCriteria = { seen: false };
+    }
+
+    const uids = (await client.search(searchCriteria)).sort((a, b) => a - b);
     const debug = String(process.env.IMAP_DEBUG || 'false') === 'true';
     if (debug) {
       console.log('[IMAP] Search result', {
@@ -180,6 +191,7 @@ async function pollMailbox() {
         }
         await processMessage({ ...message, uid });
         await client.messageFlagsAdd(uid, ['\\Seen']);
+        if (uid > lastProcessedUid) lastProcessedUid = uid;
       } catch (error) {
         console.error('[IMAP] Failed to process message:', error.message);
       }
@@ -192,6 +204,7 @@ async function pollMailbox() {
     } catch {
       // ignore
     }
+    pollingInProgress = false;
   }
 }
 
