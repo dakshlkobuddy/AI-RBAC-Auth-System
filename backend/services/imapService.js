@@ -13,11 +13,13 @@ let pollingInProgress = false;
 let lastProcessedUid = 0;
 
 function getImapConfig() {
+  const debug = String(process.env.IMAP_DEBUG || 'false') === 'true';
   return {
     host: process.env.IMAP_HOST || 'imap.gmail.com',
     port: Number(process.env.IMAP_PORT || 993),
     secure: String(process.env.IMAP_SECURE || 'true') === 'true',
     socketTimeout: Number(process.env.IMAP_SOCKET_TIMEOUT || 60000),
+    logger: debug ? undefined : false,
     auth: {
       user: process.env.IMAP_USER,
       pass: process.env.IMAP_PASS,
@@ -153,8 +155,11 @@ async function pollMailbox() {
   }
 
   const client = new ImapFlow(config);
+  const debug = String(process.env.IMAP_DEBUG || 'false') === 'true';
   client.on('error', (err) => {
-    console.error('[IMAP] Connection error:', err.message);
+    if (debug) {
+      console.error('[IMAP] Connection error:', err.message);
+    }
   });
   try {
     await client.connect();
@@ -172,13 +177,13 @@ async function pollMailbox() {
     }
 
     const uids = (await client.search(searchCriteria)).sort((a, b) => a - b);
-    const debug = String(process.env.IMAP_DEBUG || 'false') === 'true';
     if (debug) {
       console.log('[IMAP] Search result', {
         criteria: searchCriteria,
         count: uids.length
       });
     }
+    let processedCount = 0;
 
     for (const uid of uids) {
       try {
@@ -192,12 +197,23 @@ async function pollMailbox() {
         await processMessage({ ...message, uid });
         await client.messageFlagsAdd(uid, ['\\Seen']);
         if (uid > lastProcessedUid) lastProcessedUid = uid;
+        processedCount += 1;
       } catch (error) {
-        console.error('[IMAP] Failed to process message:', error.message);
+        if (debug) {
+          console.error('[IMAP] Failed to process message:', error.message);
+        }
       }
     }
+
+    if (!debug) {
+      console.log(`[IMAP] Poll complete. New messages processed: ${processedCount}`);
+    }
   } catch (error) {
-    console.error('[IMAP] Poll error:', error.message);
+    if (debug) {
+      console.error('[IMAP] Poll error:', error.message);
+    } else {
+      console.log('[IMAP] Poll error');
+    }
   } finally {
     try {
       await client.logout();

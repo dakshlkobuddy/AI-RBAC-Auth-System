@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const input = document.getElementById(targetId);
       const isPassword = input.type === 'password';
       input.type = isPassword ? 'text' : 'password';
-      btn.textContent = isPassword ? 'Hide' : 'Show';
+      btn.classList.toggle('is-visible', isPassword);
     });
   });
 });

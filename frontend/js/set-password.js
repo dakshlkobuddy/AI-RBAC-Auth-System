@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const input = document.getElementById(targetId);
       const isPassword = input.type === 'password';
       input.type = isPassword ? 'text' : 'password';
-      btn.textContent = isPassword ? 'Hide' : 'Show';
+      btn.classList.toggle('is-visible', isPassword);
     });
   });
 
@@ -26,14 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     clearMessages();
 
-    const email = document.getElementById('setupEmail').value;
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
 
-    if (!isValidEmail(email)) {
-      showError('Please enter a valid email address.');
-      return;
-    }
     if (!newPassword || newPassword.length < 6) {
       showError('Password must be at least 6 characters long.');
       return;
@@ -44,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      await apiClient.setPasswordWithToken(token, email, newPassword);
+      await apiClient.setPasswordWithToken(token, newPassword);
       showSuccess('Password set successfully. You can now login.');
       form.reset();
       setTimeout(() => {
@@ -70,7 +65,4 @@ document.addEventListener('DOMContentLoaded', () => {
     successEl.style.display = 'block';
   }
 
-  function isValidEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').toLowerCase());
-  }
 });

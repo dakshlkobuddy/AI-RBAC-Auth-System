@@ -515,10 +515,22 @@ body {
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+  width: 42px;
+  height: 42px;
+  text-indent: -9999px;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%236b7280' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
 }
 
 .toggle-password:hover {
   background: #e9ecef;
+}
+
+.toggle-password.is-visible {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%236b7280' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M3 3l18 18'/%3E%3Cpath d='M10.6 10.6a2 2 0 0 0 2.8 2.8'/%3E%3Cpath d='M9.9 5.1A10.9 10.9 0 0 1 12 5c6 0 10 7 10 7a18.5 18.5 0 0 1-3.2 3.7'/%3E%3Cpath d='M6.1 6.1A18.5 18.5 0 0 0 2 12s4 7 10 7a10.9 10.9 0 0 0 4.9-1.1'/%3E%3C/svg%3E");
 }
 
 .form-control {

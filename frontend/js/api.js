@@ -63,8 +63,8 @@ class APIClient {
     return this.request('POST', `/auth/set-password/${userId}`, { password });
   }
 
-  async setPasswordWithToken(token, email, password) {
-    return this.request('POST', '/auth/set-password', { token, email, password });
+  async setPasswordWithToken(token, password) {
+    return this.request('POST', '/auth/set-password', { token, password });
   }
 
   // User APIs
