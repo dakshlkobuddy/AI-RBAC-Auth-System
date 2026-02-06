@@ -60,9 +60,11 @@ async function loadDashboardData() {
     const tickets = await apiClient.getTickets();
     const contacts = await apiClient.getContacts();
 
+    const visibleUsers = (users.users || []).filter(user => user.role_name !== 'admin' && user.has_password);
+
     // Update dashboard stats
     if (document.getElementById('totalUsers')) {
-      document.getElementById('totalUsers').textContent = users.users?.length || 0;
+      document.getElementById('totalUsers').textContent = visibleUsers.length;
       document.getElementById('totalEnquiries').textContent = enquiries.enquiries?.length || 0;
       document.getElementById('totalTickets').textContent = tickets.tickets?.length || 0;
       document.getElementById('totalContacts').textContent = contacts.contacts?.length || 0;
@@ -175,7 +177,7 @@ function loadUsers(users) {
 
   tbody.innerHTML = '';
   users
-    .filter(user => user.role_name !== 'admin')
+    .filter(user => user.role_name !== 'admin' && user.has_password)
     .forEach(user => {
     const row = document.createElement('tr');
     row.innerHTML = `

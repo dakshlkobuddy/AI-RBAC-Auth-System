@@ -41,7 +41,8 @@ const getUserByEmail = async (email) => {
 // Get all users
 const getAllUsers = async () => {
   const query = `
-    SELECT u.id, u.name, u.email, u.role_id, u.is_active, u.created_at, r.name as role_name
+    SELECT u.id, u.name, u.email, u.role_id, u.is_active, u.created_at, r.name as role_name,
+           (u.password IS NOT NULL) as has_password
     FROM users u
     JOIN roles r ON u.role_id = r.id
     ORDER BY u.created_at DESC

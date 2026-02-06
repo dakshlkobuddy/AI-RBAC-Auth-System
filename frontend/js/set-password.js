@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
       await apiClient.setPasswordWithToken(token, newPassword);
       showSuccess('Password set successfully. You can now login.');
       form.reset();
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1200);
     } catch (error) {
       showError(error.message || 'Failed to set password.');
     }
