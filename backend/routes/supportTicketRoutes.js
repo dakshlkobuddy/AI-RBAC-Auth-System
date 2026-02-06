@@ -85,4 +85,24 @@ router.post('/:ticketId/resolve', authenticate, authorize(PERMISSIONS.REPLY_TICK
   }
 });
 
+/**
+ * @route DELETE /api/support/tickets/:ticketId
+ * @desc Delete a support ticket
+ * @access Private - Support, Admin
+ */
+router.delete('/:ticketId', authenticate, authorize(PERMISSIONS.REPLY_TICKET), async (req, res, next) => {
+  try {
+    const { ticketId } = req.params;
+    const result = await supportTicketController.deleteTicket(ticketId);
+
+    if (!result.success) {
+      return res.status(404).json({ message: result.message });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

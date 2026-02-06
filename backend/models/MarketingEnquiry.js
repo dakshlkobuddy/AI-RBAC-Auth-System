@@ -122,6 +122,20 @@ class MarketingEnquiry {
   }
 
   /**
+   * Delete enquiry
+   */
+  static async deleteEnquiry(id) {
+    try {
+      const query = `DELETE FROM enquiries WHERE id = $1`;
+      await pool.query(query, [id]);
+      return true;
+    } catch (error) {
+      console.error('Database error in deleteEnquiry:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Close an enquiry
    * Changes status from replied to closed
    */

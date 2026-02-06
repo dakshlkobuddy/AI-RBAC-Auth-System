@@ -245,6 +245,7 @@ async function loadEnquiries(enquiries) {
       <td>${new Date(enquiry.created_at).toLocaleDateString()}</td>
       <td>
         <button class="btn btn-sm btn-primary" onclick="viewEnquiry('${enquiry.id}')">View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteEnquiryConfirm('${enquiry.id}')">Delete</button>
       </td>
     `;
     tbody.appendChild(row);
@@ -312,6 +313,20 @@ async function sendEnquiryReply(enquiryId) {
   }
 }
 
+async function deleteEnquiryConfirm(enquiryId) {
+  if (!confirm('Are you sure you want to delete this enquiry?')) {
+    return;
+  }
+
+  try {
+    await apiClient.deleteEnquiry(enquiryId);
+    alert('Enquiry deleted successfully');
+    loadDashboardData();
+  } catch (error) {
+    alert('Error deleting enquiry: ' + error.message);
+  }
+}
+
 function closeEnquiryDetail() {
   document.getElementById('enquiryList').style.display = 'block';
   document.getElementById('enquiryDetail').style.display = 'none';
@@ -333,6 +348,7 @@ async function loadTickets(tickets) {
       <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
       <td>
         <button class="btn btn-sm btn-primary" onclick="viewTicket('${ticket.id}')">View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
       </td>
     `;
     tbody.appendChild(row);
@@ -409,6 +425,20 @@ async function resolveTicket(ticketId) {
     loadDashboardData();
   } catch (error) {
     alert('Error resolving ticket: ' + error.message);
+  }
+}
+
+async function deleteTicketConfirm(ticketId) {
+  if (!confirm('Are you sure you want to delete this ticket?')) {
+    return;
+  }
+
+  try {
+    await apiClient.deleteTicket(ticketId);
+    alert('Ticket deleted successfully');
+    loadDashboardData();
+  } catch (error) {
+    alert('Error deleting ticket: ' + error.message);
   }
 }
 

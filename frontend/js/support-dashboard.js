@@ -110,6 +110,7 @@ async function loadTickets(tickets) {
       <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
       <td>
         <button class="btn btn-sm btn-primary" onclick="viewTicket('${ticket.id}')">View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
       </td>
     `;
     tbody.appendChild(row);
@@ -152,6 +153,7 @@ async function viewTicket(ticketId) {
       </div>
       <button class="btn btn-primary" onclick="sendTicketReply('${ticket.id}')">Send Reply</button>
       ${ticket.status !== 'resolved' ? `<button class="btn btn-success" onclick="resolveTicket('${ticket.id}')">Resolve Ticket</button>` : ''}
+      <button class="btn btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
     `;
 
     document.getElementById('ticketList').style.display = 'none';
@@ -169,6 +171,21 @@ async function resolveTicket(ticketId) {
     loadDashboardData();
   } catch (error) {
     alert('Error resolving ticket: ' + error.message);
+  }
+}
+
+async function deleteTicketConfirm(ticketId) {
+  if (!confirm('Are you sure you want to delete this ticket?')) {
+    return;
+  }
+
+  try {
+    await apiClient.deleteTicket(ticketId);
+    alert('Ticket deleted successfully');
+    closeTicketDetail();
+    loadDashboardData();
+  } catch (error) {
+    alert('Error deleting ticket: ' + error.message);
   }
 }
 

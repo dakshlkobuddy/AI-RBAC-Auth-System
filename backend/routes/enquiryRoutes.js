@@ -65,4 +65,24 @@ router.post('/:enquiryId/reply', authenticate, authorize(PERMISSIONS.REPLY_ENQUI
   }
 });
 
+/**
+ * @route DELETE /api/enquiries/:enquiryId
+ * @desc Delete an enquiry
+ * @access Private - Marketing, Admin
+ */
+router.delete('/:enquiryId', authenticate, authorize(PERMISSIONS.REPLY_ENQUIRY), async (req, res, next) => {
+  try {
+    const { enquiryId } = req.params;
+    const result = await enquiryController.deleteEnquiry(enquiryId);
+
+    if (!result.success) {
+      return res.status(404).json({ message: result.message });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

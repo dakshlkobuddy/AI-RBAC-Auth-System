@@ -48,4 +48,11 @@ router.post('/enquiries/:id/reply', authorize(['marketing'], 'REPLY_ENQUIRY'), m
  */
 router.post('/enquiries/:id/close', authorize(['marketing'], 'REPLY_ENQUIRY'), marketingController.closeEnquiry);
 
+/**
+ * DELETE /api/marketing/enquiries/:id
+ * Delete an enquiry
+ * Permissions: marketing, REPLY_ENQUIRY
+ */
+router.delete('/enquiries/:id', authorize(['marketing'], 'REPLY_ENQUIRY'), marketingController.deleteEnquiry);
+
 module.exports = router;

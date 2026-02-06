@@ -63,8 +63,8 @@ class APIClient {
     return this.request('POST', `/auth/set-password/${userId}`, { password });
   }
 
-  async setPasswordWithToken(token, password) {
-    return this.request('POST', '/auth/set-password', { token, password });
+  async setPasswordWithToken(token, email, password) {
+    return this.request('POST', '/auth/set-password', { token, email, password });
   }
 
   // User APIs
@@ -101,6 +101,10 @@ class APIClient {
     return this.request('POST', `/enquiries/${enquiryId}/reply`, { reply });
   }
 
+  async deleteEnquiry(enquiryId) {
+    return this.request('DELETE', `/enquiries/${enquiryId}`);
+  }
+
   // Support Ticket APIs
   async getTickets() {
     return this.request('GET', '/support/tickets');
@@ -116,6 +120,10 @@ class APIClient {
 
   async resolveTicket(ticketId) {
     return this.request('POST', `/support/tickets/${ticketId}/resolve`);
+  }
+
+  async deleteTicket(ticketId) {
+    return this.request('DELETE', `/support/tickets/${ticketId}`);
   }
 
   // Email APIs

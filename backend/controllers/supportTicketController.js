@@ -113,9 +113,26 @@ const resolveTicket = async (ticketId) => {
   }
 };
 
+// Delete support ticket
+const deleteTicket = async (ticketId) => {
+  try {
+    const ticket = await SupportTicket.getTicketById(ticketId);
+    if (!ticket) {
+      return { success: false, message: 'Ticket not found' };
+    }
+
+    await SupportTicket.deleteTicket(ticketId);
+    return { success: true, message: 'Ticket deleted successfully' };
+  } catch (error) {
+    console.error('Delete ticket error:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllTickets,
   getTicketById,
   replyTicket,
   resolveTicket,
+  deleteTicket,
 };

@@ -67,11 +67,16 @@ const setPassword = async (userId, password) => {
   }
 };
 
-const setPasswordWithToken = async (token, password) => {
+const setPasswordWithToken = async (token, password, email) => {
   try {
     const payload = verifyPasswordSetupToken(token);
     if (!payload) {
       return { success: false, message: 'Invalid or expired setup link' };
+    }
+
+    const user = await User.getUserById(payload.userId);
+    if (!user || user.email !== email) {
+      return { success: false, message: 'Email does not match the setup link' };
     }
 
     return await setPassword(payload.userId, password);

@@ -83,6 +83,12 @@ const updateTicketReply = async (ticketId, aiReply, replySentAt) => {
   return result.rows[0];
 };
 
+// Delete support ticket
+const deleteTicket = async (ticketId) => {
+  const query = `DELETE FROM support_tickets WHERE id = $1`;
+  await pool.query(query, [ticketId]);
+};
+
 module.exports = {
   createTicket,
   getTicketById,
@@ -90,4 +96,5 @@ module.exports = {
   updateTicketStatus,
   updateTicketCustomerType,
   updateTicketReply,
+  deleteTicket,
 };

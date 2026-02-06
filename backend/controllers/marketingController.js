@@ -190,3 +190,33 @@ exports.closeEnquiry = async (req, res) => {
     });
   }
 };
+
+/**
+ * Delete an enquiry
+ */
+exports.deleteEnquiry = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const enquiry = await MarketingEnquiry.getEnquiryById(id);
+
+    if (!enquiry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Enquiry not found'
+      });
+    }
+
+    await MarketingEnquiry.deleteEnquiry(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Enquiry deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting enquiry:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete enquiry'
+    });
+  }
+};

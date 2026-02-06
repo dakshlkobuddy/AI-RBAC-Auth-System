@@ -60,13 +60,13 @@ router.post('/set-password/:userId', async (req, res, next) => {
  */
 router.post('/set-password', async (req, res, next) => {
   try {
-    const { token, password } = req.body;
+    const { token, password, email } = req.body;
 
-    if (!token || !password) {
-      return res.status(400).json({ message: 'Token and password are required' });
+    if (!token || !password || !email) {
+      return res.status(400).json({ message: 'Token, email, and password are required' });
     }
 
-    const result = await authController.setPasswordWithToken(token, password);
+    const result = await authController.setPasswordWithToken(token, password, email);
 
     if (!result.success) {
       return res.status(400).json({ message: result.message });

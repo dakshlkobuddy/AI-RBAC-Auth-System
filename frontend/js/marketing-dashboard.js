@@ -147,6 +147,7 @@ function renderEnquiriesTable(enquiries) {
       <td>${formatDate(enquiry.created_at)}</td>
       <td>
         <button class="btn btn-sm btn-primary" onclick="viewEnquiryDetails('${enquiry.id}')">View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteEnquiryConfirm('${enquiry.id}')">Delete</button>
       </td>
     </tr>
   `).join('');
@@ -265,6 +266,7 @@ async function viewEnquiryDetails(enquiryId) {
           ${enquiry.status === 'replied' ? 
             `<button class="btn btn-warning" onclick="closeEnquiry('${enquiry.id}')">Close Enquiry</button>` 
             : ''}
+          <button class="btn btn-danger" onclick="deleteEnquiryConfirm('${enquiry.id}')">Delete</button>
           <button class="btn btn-secondary" onclick="backToEnquiries()">Cancel</button>
         </div>
       </div>
@@ -380,5 +382,31 @@ function formatDate(dateString) {
     });
   } catch {
     return dateString;
+  }
+}
+
+async function deleteEnquiryConfirm(enquiryId) {
+  if (!confirm('Are you sure you want to delete this enquiry?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/marketing/enquiries/${enquiryId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete enquiry');
+    }
+
+    alert('Enquiry deleted successfully!');
+    backToEnquiries();
+    loadDashboardData();
+  } catch (error) {
+    console.error('Error deleting enquiry:', error);
+    alert('Failed to delete enquiry: ' + error.message);
   }
 }

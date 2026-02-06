@@ -99,8 +99,24 @@ const replyEnquiry = async (enquiryId, reply) => {
   }
 };
 
+const deleteEnquiry = async (enquiryId) => {
+  try {
+    const enquiry = await Enquiry.getEnquiryById(enquiryId);
+    if (!enquiry) {
+      return { success: false, message: 'Enquiry not found' };
+    }
+
+    await Enquiry.deleteEnquiry(enquiryId);
+    return { success: true, message: 'Enquiry deleted successfully' };
+  } catch (error) {
+    console.error('Delete enquiry error:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllEnquiries,
   getEnquiryById,
-  replyEnquiry
+  replyEnquiry,
+  deleteEnquiry,
 };

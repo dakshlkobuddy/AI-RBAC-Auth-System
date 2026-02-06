@@ -71,10 +71,17 @@ const updateEnquiryReply = async (enquiryId, aiReply, replySentAt) => {
   return result.rows[0];
 };
 
+// Delete enquiry
+const deleteEnquiry = async (enquiryId) => {
+  const query = `DELETE FROM enquiries WHERE id = $1`;
+  await pool.query(query, [enquiryId]);
+};
+
 module.exports = {
   createEnquiry,
   getEnquiryById,
   getAllEnquiries,
   updateEnquiryStatus,
   updateEnquiryReply,
+  deleteEnquiry,
 };
