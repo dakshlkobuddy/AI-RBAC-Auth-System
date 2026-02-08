@@ -177,34 +177,71 @@
             </section>
 
             <!-- Contacts Tab -->
-            <section id="contacts" class="tab-content">
-                <div class="section-header">
-                    <h2>Contacts</h2>
-                </div>
+              <section id="contacts" class="tab-content">
+                  <div class="section-header">
+                     <h2>Contacts</h2>
+                  </div>
 
-                <div class="card table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Company</th>
-                                <th>Type</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="contactsTable"></tbody>
-                    </table>
-                    <div id="contactsEmpty" class="empty-state">No contacts found.</div>
-                </div>
-            </section>
-        </main>
-    </div>
+                  <div class="card table-container">
+                      <table class="data-table">
+                          <thead>
+                              <tr>
+                                  <th>Name</th>
+                                  <th>Email</th>
+                                  <th>Phone</th>
+                                  <th>Company</th>
+                                  <th>Type</th>
+                                  <th>Date</th>
+                                  <th>Actions</th>
+                              </tr>
+                          </thead>
+                         <tbody id="contactsTable"></tbody>
+                      </table>
+                     <div id="contactsEmpty" class="empty-state">No contacts found.</div>
+                  </div>
+              </section>
+  
+              <div id="contactEditModal" class="modal" style="display: none;">
+                  <div class="modal-content">
+                      <div class="modal-header">
+                          <h3>Edit Contact</h3>
+                          <button type="button" class="modal-close" id="contactEditCloseBtn">&times;</button>
+                      </div>
+                      <form id="contactEditForm">
+                          <div class="form-row">
+                              <div class="form-group">
+                                  <label for="contactEditName">Name</label>
+                                  <input type="text" id="contactEditName" required>
+                              </div>
+                              <div class="form-group">
+                                  <label for="contactEditEmail">Email</label>
+                                  <input type="email" id="contactEditEmail" required>
+                              </div>
+                          </div>
+                          <div class="form-row">
+                              <div class="form-group">
+                                  <label for="contactEditPhone">Phone</label>
+                                  <input type="text" id="contactEditPhone">
+                              </div>
+                              <div class="form-group">
+                                  <label for="contactEditCompany">Company</label>
+                                  <input type="text" id="contactEditCompany">
+                              </div>
+                          </div>
+                          <div class="form-actions">
+                              <button type="submit" class="btn btn-primary">Save Changes</button>
+                              <button type="button" class="btn btn-secondary" id="contactEditCancelBtn">Cancel</button>
+                          </div>
+                      </form>
+                  </div>
+              </div>
+          </main>
+      </div>
 
-    <script src="js/api.js"></script>
+      <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/admin-dashboard.js"></script>
-</body>
+    <div id="toastContainer" class="toast-container"></div>
+  </body>
 
 </html>

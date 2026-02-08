@@ -51,14 +51,14 @@ const getAllContacts = async () => {
 };
 
 // Update contact
-const updateContact = async (contactId, name, email, phone, customerType, location = null, productInterest = null) => {
+const updateContact = async (contactId, name, email, phone, customerType, location = null, productInterest = null, companyId = null) => {
   const query = `
     UPDATE contacts
-    SET name = $1, email = $2, phone = $3, customer_type = $4, location = $5, product_interest = $6
-    WHERE id = $7
+    SET name = $1, email = $2, phone = $3, customer_type = $4, location = $5, product_interest = $6, company_id = $7
+    WHERE id = $8
     RETURNING id, name, email, phone, location, product_interest, company_id, customer_type, created_at
   `;
-  const result = await pool.query(query, [name, email, phone, customerType, location, productInterest, contactId]);
+  const result = await pool.query(query, [name, email, phone, customerType, location, productInterest, companyId, contactId]);
   return result.rows[0];
 };
 
@@ -72,6 +72,20 @@ const updateCustomerType = async (contactId, customerType) => {
   `;
   const result = await pool.query(query, [customerType, contactId]);
   return result.rows[0];
+};
+
+// Count related enquiries for contact
+const countEnquiriesByContactId = async (contactId) => {
+  const query = 'SELECT COUNT(*)::int AS count FROM enquiries WHERE contact_id = $1';
+  const result = await pool.query(query, [contactId]);
+  return result.rows[0]?.count || 0;
+};
+
+// Count related support tickets for contact
+const countTicketsByContactId = async (contactId) => {
+  const query = 'SELECT COUNT(*)::int AS count FROM support_tickets WHERE contact_id = $1';
+  const result = await pool.query(query, [contactId]);
+  return result.rows[0]?.count || 0;
 };
 
 // Promote customer to client if eligibility criteria met
@@ -108,6 +122,12 @@ const promoteToClientIfEligible = async (contactId) => {
   return { eligible, updated: Boolean(updated) };
 };
 
+// Delete contact
+const deleteContact = async (contactId) => {
+  const query = 'DELETE FROM contacts WHERE id = $1';
+  await pool.query(query, [contactId]);
+};
+
 module.exports = {
   createContact,
   getContactById,
@@ -116,4 +136,7 @@ module.exports = {
   updateContact,
   updateCustomerType,
   promoteToClientIfEligible,
+  deleteContact,
+  countEnquiriesByContactId,
+  countTicketsByContactId,
 };

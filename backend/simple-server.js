@@ -257,6 +257,148 @@ app.get('/api/contacts', async (req, res) => {
   }
 });
 
+app.get('/api/contacts/:contactId', async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const result = await pool.query(
+      `SELECT c.id, c.name, c.email, c.phone, c.customer_type,
+              co.company_name, c.created_at
+       FROM contacts c
+       LEFT JOIN companies co ON c.company_id = co.id
+       WHERE c.id = $1`,
+      [contactId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Contact not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      contact: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching contact:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.put('/api/contacts/:contactId', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { contactId } = req.params;
+    const { name, email, phone, company_name } = req.body || {};
+
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required' });
+    }
+
+    await client.query('BEGIN');
+
+    let companyId = null;
+    if (company_name) {
+      const existingCompany = await client.query(
+        'SELECT id FROM companies WHERE company_name = $1',
+        [company_name]
+      );
+      if (existingCompany.rows.length) {
+        companyId = existingCompany.rows[0].id;
+      } else {
+        const newCompany = await client.query(
+          'INSERT INTO companies (id, company_name) VALUES ($1, $2) RETURNING id',
+          [uuidv4(), company_name]
+        );
+        companyId = newCompany.rows[0].id;
+      }
+    }
+
+    const updateResult = await client.query(
+      `UPDATE contacts
+       SET name = $1,
+           email = $2,
+           phone = $3,
+           company_id = $4
+       WHERE id = $5
+       RETURNING id`,
+      [name, email, phone || null, companyId, contactId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Contact not found' });
+    }
+
+    await client.query('COMMIT');
+
+    const refreshed = await pool.query(
+      `SELECT c.id, c.name, c.email, c.phone, c.customer_type,
+              co.company_name, c.created_at
+       FROM contacts c
+       LEFT JOIN companies co ON c.company_id = co.id
+       WHERE c.id = $1`,
+      [contactId]
+    );
+
+    res.status(200).json({
+      success: true,
+      contact: refreshed.rows[0]
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating contact:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete('/api/contacts/:contactId', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { contactId } = req.params;
+
+    const enquiryCount = await client.query(
+      'SELECT COUNT(*)::int AS count FROM enquiries WHERE contact_id = $1',
+      [contactId]
+    );
+    const ticketCount = await client.query(
+      'SELECT COUNT(*)::int AS count FROM support_tickets WHERE contact_id = $1',
+      [contactId]
+    );
+
+    if ((enquiryCount.rows[0].count || 0) > 0 || (ticketCount.rows[0].count || 0) > 0) {
+      return res.status(400).json({
+        message: 'Contact is linked to existing enquiries or support tickets'
+      });
+    }
+
+    const deleteResult = await client.query(
+      'DELETE FROM contacts WHERE id = $1 RETURNING id',
+      [contactId]
+    );
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Contact not found' });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error deleting contact:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  } finally {
+    client.release();
+  }
+});
+
 // ================================================================
 // MARKETING ENDPOINTS
 // ================================================================

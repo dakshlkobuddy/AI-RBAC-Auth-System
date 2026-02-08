@@ -144,6 +144,14 @@ class APIClient {
   async getContact(contactId) {
     return this.request('GET', `/contacts/${contactId}`);
   }
+
+  async updateContact(contactId, payload) {
+    return this.request('PUT', `/contacts/${contactId}`, payload);
+  }
+
+  async deleteContact(contactId) {
+    return this.request('DELETE', `/contacts/${contactId}`);
+  }
 }
 
 // Create global API client instance

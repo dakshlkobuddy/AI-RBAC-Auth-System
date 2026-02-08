@@ -5,6 +5,7 @@
 
 let editingUserId = null;
 let cachedUsers = [];
+let editingContactId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
@@ -50,6 +51,23 @@ function setupEventListeners() {
     e.preventDefault();
     await submitUserForm();
   });
+
+  const contactEditForm = document.getElementById('contactEditForm');
+  if (contactEditForm) {
+    contactEditForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await submitContactEditForm();
+    });
+  }
+
+  const contactEditCloseBtn = document.getElementById('contactEditCloseBtn');
+  if (contactEditCloseBtn) {
+    contactEditCloseBtn.addEventListener('click', closeContactEditModal);
+  }
+  const contactEditCancelBtn = document.getElementById('contactEditCancelBtn');
+  if (contactEditCancelBtn) {
+    contactEditCancelBtn.addEventListener('click', closeContactEditModal);
+  }
 }
 
 async function loadDashboardData() {
@@ -227,6 +245,11 @@ function editUser(userId) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').toLowerCase());
+}
+
+function isValidPhone(value) {
+  if (!value) return true;
+  return /^[0-9]{7,15}$/.test(String(value).trim());
 }
 
 async function loadEnquiries(enquiries) {
@@ -454,6 +477,110 @@ async function deleteTicketConfirm(ticketId) {
   }
 }
 
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) {
+    alert(message);
+    return;
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-hide');
+  }, 2500);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
+
+async function deleteContactConfirm(contactId) {
+  if (!confirm('Are you sure you want to delete this contact?')) {
+    return;
+  }
+
+  try {
+    await apiClient.deleteContact(contactId);
+    showToast('Contact deleted successfully', 'success');
+    loadDashboardData();
+  } catch (error) {
+    showToast(error.message || 'Failed to delete contact', 'error');
+  }
+}
+
+async function editContact(contactId) {
+  try {
+    const response = await apiClient.getContact(contactId);
+    const contact = response.contact;
+    openContactEditModal(contact);
+  } catch (error) {
+    showToast(error.message || 'Failed to update contact', 'error');
+  }
+}
+
+function openContactEditModal(contact) {
+  const modal = document.getElementById('contactEditModal');
+  if (!modal) return;
+
+  editingContactId = contact.id;
+  document.getElementById('contactEditName').value = contact.name || '';
+  document.getElementById('contactEditEmail').value = contact.email || '';
+  document.getElementById('contactEditPhone').value = contact.phone || '';
+  document.getElementById('contactEditCompany').value = contact.company_name || '';
+
+  modal.style.display = 'flex';
+}
+
+function closeContactEditModal() {
+  const modal = document.getElementById('contactEditModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+  editingContactId = null;
+}
+
+async function submitContactEditForm() {
+  if (!editingContactId) {
+    showToast('Contact not selected', 'error');
+    return;
+  }
+
+  const name = document.getElementById('contactEditName').value.trim();
+  const email = document.getElementById('contactEditEmail').value.trim();
+  const phone = document.getElementById('contactEditPhone').value.trim();
+  const companyName = document.getElementById('contactEditCompany').value.trim();
+
+  if (!name) {
+    showToast('Name is required', 'error');
+    return;
+  }
+  if (!isValidEmail(email)) {
+    showToast('Please enter a valid email address', 'error');
+    return;
+  }
+  if (!isValidPhone(phone)) {
+    showToast('Invalid phone number', 'error');
+    return;
+  }
+
+  try {
+    await apiClient.updateContact(editingContactId, {
+      name,
+      email,
+      phone: phone || null,
+      company_name: companyName || null,
+    });
+    showToast('Contact updated successfully', 'success');
+    closeContactEditModal();
+    loadDashboardData();
+  } catch (error) {
+    showToast(error.message || 'Failed to update contact', 'error');
+  }
+}
+
 function closeTicketDetail() {
   document.getElementById('ticketList').style.display = 'block';
   document.getElementById('ticketDetail').style.display = 'none';
@@ -479,6 +606,10 @@ function loadContacts(contacts) {
       <td>${contact.company_name || 'N/A'}</td>
       <td><span class="badge badge-${contact.customer_type}">${contact.customer_type}</span></td>
       <td>${new Date(contact.created_at).toLocaleDateString()}</td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="editContact('${contact.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteContactConfirm('${contact.id}')">Delete</button>
+      </td>
     `;
     tbody.appendChild(row);
   });
