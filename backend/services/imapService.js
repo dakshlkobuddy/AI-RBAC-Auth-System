@@ -33,7 +33,7 @@ function extractPhone(text) {
   return phoneMatch ? phoneMatch[1].trim() : null;
 }
 
-async function processMessage(message) {
+async function processMessage(message, mailboxMeta = {}) {
   const parsed = await simpleParser(message.source);
   const from = parsed.from?.value?.[0] || {};
   const fromEmail = from.address || '';
@@ -42,6 +42,13 @@ async function processMessage(message) {
   const messageText = parsed.text || parsed.html || '';
   const receivedDate = parsed.date || null;
   const messageId = parsed.messageId || `uid:${message.uid}`;
+  const uidValidity = mailboxMeta.uidValidity || message.uidValidity || null;
+  const mailboxPath = mailboxMeta.path || mailboxMeta.mailboxPath || null;
+  const dedupeKey = messageId || (
+    uidValidity && message.uid
+      ? `uidv:${uidValidity}:uid:${message.uid}${mailboxPath ? `:mb:${mailboxPath}` : ''}`
+      : null
+  );
   const companyEmail = (process.env.COMPANY_EMAIL || '').toLowerCase();
   const recipients = [
     ...(parsed.to?.value || []),
@@ -109,7 +116,7 @@ async function processMessage(message) {
       message: messageText,
       sentimentScore: aiResult.sentiment?.score,
       sentimentLabel: aiResult.sentiment?.label,
-      messageId,
+      messageId: dedupeKey,
       intent: aiResult.intent,
       aiReply: aiResult.aiReply,
       confidence: aiResult.confidence,
@@ -129,14 +136,14 @@ async function processMessage(message) {
     console.log('[IMAP] Processed message', {
       subject,
       fromEmail,
-      messageId,
+      messageId: dedupeKey,
       intent: aiResult.intent,
       saved: !saveResult?.skipped,
     });
     if (saveResult?.skipped) {
       console.log('[IMAP] Skipped saving (deduped)', {
         subject,
-        messageId
+        messageId: dedupeKey
       });
     }
   }
@@ -163,7 +170,11 @@ async function pollMailbox() {
   });
   try {
     await client.connect();
-    await client.mailboxOpen(process.env.IMAP_MAILBOX || 'INBOX');
+    const mailbox = await client.mailboxOpen(process.env.IMAP_MAILBOX || 'INBOX');
+    const mailboxMeta = {
+      uidValidity: mailbox?.uidValidity,
+      path: mailbox?.path || process.env.IMAP_MAILBOX || 'INBOX'
+    };
 
     const sinceEnv = process.env.IMAP_SINCE;
     const sinceDate = sinceEnv ? new Date(sinceEnv) : null;
@@ -173,30 +184,33 @@ async function pollMailbox() {
     } else if (sinceDate) {
       searchCriteria = { since: sinceDate };
     } else {
-      searchCriteria = { seen: false };
+      // First run: scan all, then dedupe by UID-based key
+      searchCriteria = { all: true };
     }
 
-    const uids = (await client.search(searchCriteria)).sort((a, b) => a - b);
+    const sequenceNumbers = (await client.search(searchCriteria)).sort((a, b) => a - b);
     if (debug) {
       console.log('[IMAP] Search result', {
         criteria: searchCriteria,
-        count: uids.length
+        count: sequenceNumbers.length
       });
     }
     let processedCount = 0;
 
-    for (const uid of uids) {
+    for (const sequenceNumber of sequenceNumbers) {
       try {
-        const message = await client.fetchOne(uid, { uid: true, source: true });
+        const message = await client.fetchOne(sequenceNumber, { source: true });
         if (!message || !message.source) {
           if (debug) {
-            console.log('[IMAP] Skipped message: missing source', { uid });
+            console.log('[IMAP] Skipped message: missing source', { sequenceNumber });
           }
           continue;
         }
-        await processMessage({ ...message, uid });
-        await client.messageFlagsAdd(uid, ['\\Seen']);
-        if (uid > lastProcessedUid) lastProcessedUid = uid;
+        await processMessage({ ...message, uid: message.uid }, mailboxMeta);
+        await client.messageFlagsAdd(sequenceNumber, ['\\Seen']);
+        if (typeof message.uid === 'number' && message.uid > lastProcessedUid) {
+          lastProcessedUid = message.uid;
+        }
         processedCount += 1;
       } catch (error) {
         if (debug) {
