@@ -737,6 +737,13 @@ body {
   padding: 20px;
 }
 
+.modal-message {
+  font-size: 14px;
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
 .modal-header {
   display: flex;
   align-items: center;

@@ -70,6 +70,65 @@ function setupEventListeners() {
   }
 }
 
+function showModal(message, options = {}) {
+  const modal = document.getElementById('appModal');
+  if (!modal) {
+    console.error('Modal container not found');
+    return Promise.resolve(false);
+  }
+
+  const {
+    title = 'Message',
+    confirmText,
+    cancelText = 'No',
+    showCancel = true,
+  } = options;
+
+  const titleEl = document.getElementById('appModalTitle');
+  const messageEl = document.getElementById('appModalMessage');
+  const yesBtn = document.getElementById('appModalYes');
+  const noBtn = document.getElementById('appModalNo');
+  const closeBtn = document.getElementById('appModalClose');
+  const resolvedConfirmText = confirmText || (showCancel ? 'Yes' : 'OK');
+
+  if (titleEl) titleEl.textContent = title;
+  if (messageEl) messageEl.textContent = message;
+  if (yesBtn) yesBtn.textContent = resolvedConfirmText;
+  if (noBtn) noBtn.textContent = cancelText;
+  if (noBtn) noBtn.style.display = showCancel ? 'inline-flex' : 'none';
+
+  modal.style.display = 'flex';
+
+  return new Promise(resolve => {
+    const cleanup = () => {
+      modal.style.display = 'none';
+      if (yesBtn) yesBtn.removeEventListener('click', onYes);
+      if (noBtn) noBtn.removeEventListener('click', onNo);
+      if (closeBtn) closeBtn.removeEventListener('click', onNo);
+      modal.removeEventListener('click', onBackdrop);
+    };
+
+    const onYes = () => {
+      cleanup();
+      resolve(true);
+    };
+    const onNo = () => {
+      cleanup();
+      resolve(false);
+    };
+    const onBackdrop = (event) => {
+      if (event.target === modal) {
+        onNo();
+      }
+    };
+
+    if (yesBtn) yesBtn.addEventListener('click', onYes);
+    if (noBtn) noBtn.addEventListener('click', onNo);
+    if (closeBtn) closeBtn.addEventListener('click', onNo);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
+
 async function loadDashboardData() {
   try {
     // Load stats
@@ -163,29 +222,29 @@ async function submitUserForm() {
 
   try {
     if (!name.trim()) {
-      alert('Name is required');
+      await showModal('Name is required', { title: 'Validation', showCancel: false });
       return;
     }
     if (!isValidEmail(email)) {
-      alert('Please enter a valid email address');
+      await showModal('Please enter a valid email address', { title: 'Validation', showCancel: false });
       return;
     }
     if (!role) {
-      alert('Please select a role');
+      await showModal('Please select a role', { title: 'Validation', showCancel: false });
       return;
     }
 
     if (editingUserId) {
       await apiClient.updateUser(editingUserId, name, email, role);
-      alert('User updated successfully!');
+      await showModal('User updated successfully!', { title: 'Success', showCancel: false });
     } else {
       await apiClient.createUser(name, email, role);
-      alert('User created successfully! Password setup email sent.');
+      await showModal('User created successfully! Password setup email sent.', { title: 'Success', showCancel: false });
     }
     toggleUserForm();
     loadDashboardData();
   } catch (error) {
-    alert('Error saving user: ' + error.message);
+    await showModal(`Error saving user: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
@@ -214,21 +273,24 @@ function loadUsers(users) {
 }
 
 async function deleteUserConfirm(userId) {
-  if (confirm('Are you sure you want to delete this user?')) {
-    try {
-      await apiClient.deleteUser(userId);
-      alert('User deleted successfully');
-      loadDashboardData();
-    } catch (error) {
-      alert('Error deleting user: ' + error.message);
-    }
+  const confirmed = await showModal('Are you sure you want to delete this user?', { title: 'Confirm', showCancel: true });
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await apiClient.deleteUser(userId);
+    await showModal('User deleted successfully', { title: 'Success', showCancel: false });
+    loadDashboardData();
+  } catch (error) {
+    await showModal(`Error deleting user: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
-function editUser(userId) {
+async function editUser(userId) {
   const user = cachedUsers.find(u => u.id === userId);
   if (!user) {
-    alert('User not found');
+    await showModal('User not found', { title: 'Error', showCancel: false });
     return;
   }
 
@@ -321,38 +383,39 @@ async function viewEnquiry(enquiryId) {
     document.getElementById('enquiryList').style.display = 'none';
     document.getElementById('enquiryDetail').style.display = 'block';
   } catch (error) {
-    alert('Error loading enquiry: ' + error.message);
+    await showModal(`Error loading enquiry: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
 async function sendEnquiryReply(enquiryId) {
   const reply = document.getElementById('replyText').value;
   if (!reply.trim()) {
-    alert('Please enter a reply');
+    await showModal('Please enter a reply', { title: 'Validation', showCancel: false });
     return;
   }
 
   try {
     await apiClient.replyEnquiry(enquiryId, reply);
-    alert('Reply sent successfully');
+    await showModal('Reply sent successfully', { title: 'Success', showCancel: false });
     closeEnquiryDetail();
     loadDashboardData();
   } catch (error) {
-    alert('Error sending reply: ' + error.message);
+    await showModal(`Error sending reply: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
 async function deleteEnquiryConfirm(enquiryId) {
-  if (!confirm('Are you sure you want to delete this enquiry?')) {
+  const confirmed = await showModal('Are you sure you want to delete this enquiry?', { title: 'Confirm', showCancel: true });
+  if (!confirmed) {
     return;
   }
 
   try {
     await apiClient.deleteEnquiry(enquiryId);
-    alert('Enquiry deleted successfully');
+    await showModal('Enquiry deleted successfully', { title: 'Success', showCancel: false });
     loadDashboardData();
   } catch (error) {
-    alert('Error deleting enquiry: ' + error.message);
+    await showModal(`Error deleting enquiry: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
@@ -431,56 +494,57 @@ async function viewTicket(ticketId) {
     document.getElementById('ticketList').style.display = 'none';
     document.getElementById('ticketDetail').style.display = 'block';
   } catch (error) {
-    alert('Error loading ticket: ' + error.message);
+    await showModal(`Error loading ticket: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
 async function sendTicketReply(ticketId) {
   const reply = document.getElementById('replyText').value;
   if (!reply.trim()) {
-    alert('Please enter a reply');
+    await showModal('Please enter a reply', { title: 'Validation', showCancel: false });
     return;
   }
 
   try {
     await apiClient.replyTicket(ticketId, reply);
-    alert('Reply sent successfully');
+    await showModal('Reply sent successfully', { title: 'Success', showCancel: false });
     closeTicketDetail();
     loadDashboardData();
   } catch (error) {
-    alert('Error sending reply: ' + error.message);
+    await showModal(`Error sending reply: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
 async function resolveTicket(ticketId) {
   try {
     await apiClient.resolveTicket(ticketId);
-    alert('Ticket resolved successfully');
+    await showModal('Ticket resolved successfully', { title: 'Success', showCancel: false });
     closeTicketDetail();
     loadDashboardData();
   } catch (error) {
-    alert('Error resolving ticket: ' + error.message);
+    await showModal(`Error resolving ticket: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
 async function deleteTicketConfirm(ticketId) {
-  if (!confirm('Are you sure you want to delete this ticket?')) {
+  const confirmed = await showModal('Are you sure you want to delete this ticket?', { title: 'Confirm', showCancel: true });
+  if (!confirmed) {
     return;
   }
 
   try {
     await apiClient.deleteTicket(ticketId);
-    alert('Ticket deleted successfully');
+    await showModal('Ticket deleted successfully', { title: 'Success', showCancel: false });
     loadDashboardData();
   } catch (error) {
-    alert('Error deleting ticket: ' + error.message);
+    await showModal(`Error deleting ticket: ${error.message}`, { title: 'Error', showCancel: false });
   }
 }
 
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) {
-    alert(message);
+    showModal(message, { title: 'Notice', showCancel: false });
     return;
   }
 
@@ -499,7 +563,8 @@ function showToast(message, type = 'info') {
 }
 
 async function deleteContactConfirm(contactId) {
-  if (!confirm('Are you sure you want to delete this contact?')) {
+  const confirmed = await showModal('Are you sure you want to delete this contact?', { title: 'Confirm', showCancel: true });
+  if (!confirmed) {
     return;
   }
 
