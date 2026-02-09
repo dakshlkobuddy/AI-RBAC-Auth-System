@@ -181,7 +181,7 @@ class Email {
     try {
       // Check if contact exists by email or phone
       let query = `
-        SELECT id, name, email, phone, location, product_interest, customer_type FROM contacts 
+        SELECT id, name, email, phone, location, product_interest, customer_type, company_id FROM contacts 
         WHERE email = $1
         ${phone ? 'OR phone = $2' : ''}
         LIMIT 1
@@ -192,6 +192,26 @@ class Email {
 
       if (result.rows.length > 0) {
         const existing = result.rows[0];
+        let existingCompanyName = '';
+        if (existing.company_id) {
+          const companyResult = await client.query(
+            'SELECT company_name FROM companies WHERE id = $1 LIMIT 1',
+            [existing.company_id]
+          );
+          existingCompanyName = companyResult.rows[0]?.company_name || '';
+        }
+        const newCompanyNameResult = companyId
+          ? await client.query('SELECT company_name FROM companies WHERE id = $1 LIMIT 1', [companyId])
+          : { rows: [] };
+        const newCompanyName = newCompanyNameResult.rows[0]?.company_name || '';
+
+        const shouldUpdateCompany =
+          companyId &&
+          existing.company_id !== companyId &&
+          existingCompanyName === 'Individual' &&
+          newCompanyName &&
+          newCompanyName !== 'Individual';
+
         const shouldPromote = existing.customer_type === 'prospect';
         const shouldUpdatePhone = phone && !existing.phone;
         const shouldUpdateLocation = location && !existing.location;
@@ -201,7 +221,7 @@ class Email {
           name &&
           (existing.name === emailPrefix || existing.name === emailPrefix.replace(/[._-]/g, ' ') || existing.name === 'Unknown');
 
-        if (shouldPromote || shouldUpdatePhone || shouldUpdateLocation || shouldUpdateProduct || shouldUpdateName) {
+        if (shouldPromote || shouldUpdatePhone || shouldUpdateLocation || shouldUpdateProduct || shouldUpdateName || shouldUpdateCompany) {
           const updateQuery = `
             UPDATE contacts
             SET
@@ -209,8 +229,9 @@ class Email {
               phone = COALESCE($2, phone),
               location = COALESCE($3, location),
               product_interest = COALESCE($4, product_interest),
-              customer_type = CASE WHEN customer_type = 'prospect' THEN 'customer' ELSE customer_type END
-            WHERE id = $5
+              customer_type = CASE WHEN customer_type = 'prospect' THEN 'customer' ELSE customer_type END,
+              company_id = COALESCE($5, company_id)
+            WHERE id = $6
             RETURNING id, name, email, customer_type
           `;
           const updateResult = await client.query(updateQuery, [
@@ -218,6 +239,7 @@ class Email {
             phone || null,
             location || null,
             productInterest || null,
+            shouldUpdateCompany ? companyId : null,
             existing.id
           ]);
           return updateResult.rows[0] || existing;

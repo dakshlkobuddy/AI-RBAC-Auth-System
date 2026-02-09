@@ -272,8 +272,6 @@ async function processIncomingEmail(emailData) {
 
   const extracted = normalizeExtractedDetails(
     aiStructured?.details || {},
-    fromName,
-    fromEmail,
     message
   );
 
@@ -359,12 +357,59 @@ function extractPhoneFromText(text) {
   return phoneMatch ? phoneMatch[1].trim() : '';
 }
 
-function normalizeExtractedDetails(details, fromName, fromEmail, message) {
-  const name = details.name?.trim() || (fromName || fromEmail.split('@')[0]).trim();
-  const phone = details.phone?.trim() || extractPhoneFromText(message);
-  const companyName = details.company_name?.trim() || '';
-  const location = details.location?.trim() || '';
-  const productInterest = details.product_interest?.trim() || '';
+function getFooterLines(message) {
+  if (!message || typeof message !== 'string') return [];
+  const lines = message.split('\n').map(line => line.trim()).filter(Boolean);
+  if (lines.length === 0) return [];
+  const maxLines = 10;
+  const tail = lines.slice(-maxLines);
+  const startIdx = tail.findIndex(line => /^(thanks|thank you|regards|best|sincerely|kind regards|warm regards|cheers)[,]?\b/i.test(line));
+  return startIdx >= 0 ? tail.slice(startIdx + 1) : tail;
+}
+
+function extractFooterDetails(message) {
+  const footerLines = getFooterLines(message);
+  const details = {
+    name: '',
+    company_name: '',
+    phone: '',
+    location: ''
+  };
+
+  if (footerLines.length === 0) return details;
+
+  // Phone
+  const phoneLine = footerLines.find(line => /phone|tel|mobile|cell/i.test(line)) || '';
+  const phoneMatch = phoneLine.match(/(\+?\d[\d\s().-]{7,}\d)/);
+  if (phoneMatch) details.phone = phoneMatch[1].trim();
+
+  // Location/Address
+  const locationLine = footerLines.find(line => /(address|addr|road|street|st\.|ave|avenue|city|state|country|india|usa|uk|lane|blvd|floor)/i.test(line)) || '';
+  if (locationLine) details.location = locationLine.trim();
+
+  // Name: first reasonable line that isn't a label/phone/location/company
+  const nameCandidate = footerLines.find(line =>
+    !/phone|tel|mobile|cell|address|addr|road|street|st\.|ave|avenue|city|state|country|india|usa|uk|lane|blvd|floor/i.test(line) &&
+    !/company|pvt|ltd|inc|llc|corp|limited|solutions|technologies|tech|systems/i.test(line)
+  );
+  if (nameCandidate) details.name = nameCandidate.trim();
+
+  // Company: last reasonable line that looks like a company name
+  const companyCandidate = [...footerLines].reverse().find(line =>
+    /(pvt|ltd|inc|llc|corp|limited|solutions|technologies|tech|systems|company|co\.)/i.test(line)
+  );
+  if (companyCandidate) details.company_name = companyCandidate.trim();
+
+  return details;
+}
+
+function normalizeExtractedDetails(details, message) {
+  const footerDetails = extractFooterDetails(message);
+  const name = details.name?.trim() || footerDetails.name || null;
+  const phone = details.phone?.trim() || footerDetails.phone || null;
+  const companyName = details.company_name?.trim() || footerDetails.company_name || null;
+  const location = details.location?.trim() || footerDetails.location || null;
+  const productInterest = details.product_interest?.trim() || null;
 
   return {
     name,
@@ -409,6 +454,13 @@ Rules:
   Subject: Pricing and plans
   Message: We want to know pricing and features...
   => intent: "enquiry"
+Additional extraction rules (IMPORTANT):
+- Extract name, company, phone, location ONLY from the email footer/signature.
+- The footer usually appears at the end of the email and may contain: name, job title, company name, phone number, address.
+- Do NOT extract name or company from the email address, username, subject line, or main email body.
+- Extract company ONLY if a clear company name is explicitly written in the footer.
+- Do NOT guess company from the email domain.
+- If any field is not clearly present in the footer, leave it as empty string.
 
 Sender name: ${fromName || ''}
 Subject: ${subject}
