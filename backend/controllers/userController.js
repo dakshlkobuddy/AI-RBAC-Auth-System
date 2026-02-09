@@ -1,10 +1,25 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
+const UserInvite = require('../models/UserInvite');
+const { v4: uuidv4 } = require('uuid');
 const { sendEmail } = require('../services/mailer');
 const { generatePasswordSetupToken } = require('../utils/authUtils');
 
 // Create a new user (Admin only)
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').toLowerCase());
+
+const parseExpiryToDate = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const match = raw.match(/^(\d+)([smhd])$/i);
+  if (!match) return null;
+  const amount = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+  const ms = amount * (multipliers[unit] || 0);
+  if (!ms) return null;
+  return new Date(Date.now() + ms);
+};
 
 const createUser = async (name, email, role) => {
   try {
@@ -22,6 +37,11 @@ const createUser = async (name, email, role) => {
       return { success: false, message: 'User with this email already exists' };
     }
 
+    const existingInvite = await UserInvite.getInviteByEmail(email);
+    if (existingInvite) {
+      return { success: false, message: 'Invite already sent to this email' };
+    }
+
     if (role === 'admin') {
       return { success: false, message: 'Admin role cannot be created here' };
     }
@@ -32,11 +52,18 @@ const createUser = async (name, email, role) => {
       return { success: false, message: 'Invalid role' };
     }
 
-    // Create user
-    const newUser = await User.createUser(name, email, roleData.id);
-
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const setupToken = generatePasswordSetupToken(newUser.id);
+    const expiresAt = parseExpiryToDate(process.env.PASSWORD_SETUP_EXPIRE || '24h');
+    const inviteId = uuidv4();
+    const setupToken = generatePasswordSetupToken({ inviteId });
+    const storedInvite = await UserInvite.createInvite({
+      id: inviteId,
+      name,
+      email,
+      roleId: roleData.id,
+      token: setupToken,
+      expiresAt,
+    });
     const setupLink = `${frontendUrl.replace(/\/$/, '')}/set-password.html?token=${encodeURIComponent(setupToken)}`;
 
     sendEmail({
@@ -56,11 +83,11 @@ const createUser = async (name, email, role) => {
     return {
       success: true,
       message: 'User created successfully. Password setup email has been sent.',
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role_id: newUser.role_id,
+      invite: {
+        id: storedInvite.id,
+        name: storedInvite.name,
+        email: storedInvite.email,
+        role_id: storedInvite.role_id,
       },
     };
   } catch (error) {

@@ -35,6 +35,18 @@ CREATE TABLE IF NOT EXISTS users (
   FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
+-- User Invites Table (store pending users until password is set)
+CREATE TABLE IF NOT EXISTS user_invites (
+  id UUID PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  role_id INTEGER NOT NULL,
+  token TEXT NOT NULL,
+  expires_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
 -- Companies Table
 CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY,

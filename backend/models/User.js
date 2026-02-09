@@ -45,6 +45,7 @@ const getAllUsers = async () => {
            (u.password IS NOT NULL) as has_password
     FROM users u
     JOIN roles r ON u.role_id = r.id
+    WHERE u.password IS NOT NULL
     ORDER BY u.created_at DESC
   `;
   const result = await pool.query(query);

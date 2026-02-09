@@ -3,7 +3,7 @@ const pool = require('./config/database');
 async function addMissingColumns() {
   try {
     console.log('Adding missing columns to enquiries table...');
-    
+
     // Add company_id column to enquiries
     await pool.query(`
       ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS company_id UUID,
@@ -11,7 +11,7 @@ async function addMissingColumns() {
     `).catch(() => {
       // Column might already exist, continue
     });
-    
+
     // Add customer_type column to enquiries
     await pool.query(`
       ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS customer_type VARCHAR(50) DEFAULT 'prospect'
@@ -27,11 +27,11 @@ async function addMissingColumns() {
     `).catch(() => {
       // Column might already exist
     });
-    
-    console.log('✓ Enquiries table updated');
-    
+
+    console.log('OK: Enquiries table updated');
+
     console.log('Adding missing columns to support_tickets table...');
-    
+
     // Add company_id column to support_tickets
     await pool.query(`
       ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS company_id UUID,
@@ -39,7 +39,7 @@ async function addMissingColumns() {
     `).catch(() => {
       // Column might already exist, continue
     });
-    
+
     // Add priority column to support_tickets
     await pool.query(`
       ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS priority VARCHAR(50) DEFAULT 'medium'
@@ -62,8 +62,8 @@ async function addMissingColumns() {
     `).catch(() => {
       // Column might already exist
     });
-    
-    console.log('✓ Support_tickets table updated');
+
+    console.log('OK: Support_tickets table updated');
 
     console.log('Adding missing columns to contacts table...');
 
@@ -74,9 +74,28 @@ async function addMissingColumns() {
       // Column might already exist
     });
 
-    console.log('✓ Contacts table updated');
-    
-    console.log('\n✓ All columns added successfully!');
+    console.log('OK: Contacts table updated');
+
+    console.log('Adding user_invites table (if missing)...');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_invites (
+        id UUID PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        role_id INTEGER NOT NULL,
+        token TEXT NOT NULL,
+        expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (role_id) REFERENCES roles(id)
+      )
+    `).catch(() => {
+      // Table might already exist
+    });
+
+    console.log('OK: User_invites table ensured');
+
+    console.log('\nOK: All columns added successfully!');
     process.exit(0);
   } catch (error) {
     console.error('Error adding columns:', error.message);

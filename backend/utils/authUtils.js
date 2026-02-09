@@ -10,9 +10,13 @@ const generateToken = (userId, roleId) => {
   );
 };
 
-const generatePasswordSetupToken = (userId) => {
+const generatePasswordSetupToken = (payloadOrUserId) => {
+  const payload = typeof payloadOrUserId === 'string'
+    ? { userId: payloadOrUserId }
+    : (payloadOrUserId || {});
+
   return jwt.sign(
-    { userId, purpose: 'password_setup' },
+    { ...payload, purpose: 'password_setup' },
     process.env.JWT_SECRET || 'your_secret_key',
     { expiresIn: process.env.PASSWORD_SETUP_EXPIRE || '24h' }
   );

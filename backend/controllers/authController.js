@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
+const UserInvite = require('../models/UserInvite');
 const { generateToken, comparePassword, verifyPasswordSetupToken } = require('../utils/authUtils');
 
 // Admin login
@@ -50,6 +51,11 @@ const setPassword = async (userId, password) => {
       return { success: false, message: 'Password must be at least 6 characters' };
     }
 
+    const existingUser = await User.getUserById(userId);
+    if (!existingUser) {
+      return { success: false, message: 'User not found' };
+    }
+
     const user = await User.updateUserPassword(userId, password);
 
     return {
@@ -72,6 +78,40 @@ const setPasswordWithToken = async (token, password) => {
     const payload = verifyPasswordSetupToken(token);
     if (!payload) {
       return { success: false, message: 'Invalid or expired setup link' };
+    }
+
+    if (payload.inviteId) {
+      const invite = await UserInvite.getInviteById(payload.inviteId);
+      if (!invite) {
+        return { success: false, message: 'Invalid or expired setup link' };
+      }
+      if (invite.token !== token) {
+        return { success: false, message: 'Invalid or expired setup link' };
+      }
+      if (invite.expires_at && new Date(invite.expires_at).getTime() < Date.now()) {
+        await UserInvite.deleteInvite(invite.id);
+        return { success: false, message: 'Invalid or expired setup link' };
+      }
+
+      const existingUser = await User.getUserByEmail(invite.email);
+      if (existingUser) {
+        await UserInvite.deleteInvite(invite.id);
+        return { success: false, message: 'User already exists. Please log in.' };
+      }
+
+      const newUser = await User.createUser(invite.name, invite.email, invite.role_id);
+      const user = await User.updateUserPassword(newUser.id, password);
+      await UserInvite.deleteInvite(invite.id);
+
+      return {
+        success: true,
+        message: 'Password set successfully',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
     }
 
     return await setPassword(payload.userId, password);
