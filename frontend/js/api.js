@@ -4,10 +4,61 @@
  */
 
 const API_BASE_URL = 'http://localhost:5000/api';
+const LOADING_OVERLAY_ID = 'globalLoadingOverlay';
+
+function ensureLoadingOverlay() {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  let overlay = document.getElementById(LOADING_OVERLAY_ID);
+  if (overlay) {
+    return overlay;
+  }
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #${LOADING_OVERLAY_ID} {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(2px);
+      z-index: 9999;
+    }
+    #${LOADING_OVERLAY_ID}.is-visible {
+      display: flex;
+    }
+    #${LOADING_OVERLAY_ID} .spinner {
+      width: 52px;
+      height: 52px;
+      border: 5px solid rgba(255, 255, 255, 0.45);
+      border-top-color: #2b7de9;
+      border-radius: 50%;
+      animation: apiSpinner 0.9s linear infinite;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+      background: transparent;
+    }
+    @keyframes apiSpinner {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  overlay = document.createElement('div');
+  overlay.id = LOADING_OVERLAY_ID;
+  overlay.innerHTML = '<div class="spinner" aria-label="Loading"></div>';
+  document.body.appendChild(overlay);
+
+  return overlay;
+}
 
 class APIClient {
   constructor() {
     this.token = localStorage.getItem('token');
+    this.pendingRequests = 0;
   }
 
   // Set token after login
@@ -40,6 +91,7 @@ class APIClient {
     }
 
     try {
+      this.showLoading();
       const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
       const data = await response.json();
 
@@ -51,6 +103,27 @@ class APIClient {
     } catch (error) {
       console.error('API Error:', error);
       throw error;
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  showLoading() {
+    this.pendingRequests += 1;
+    const overlay = ensureLoadingOverlay();
+    if (overlay) {
+      overlay.classList.add('is-visible');
+    }
+  }
+
+  hideLoading() {
+    this.pendingRequests = Math.max(0, this.pendingRequests - 1);
+    if (this.pendingRequests > 0) {
+      return;
+    }
+    const overlay = ensureLoadingOverlay();
+    if (overlay) {
+      overlay.classList.remove('is-visible');
     }
   }
 
