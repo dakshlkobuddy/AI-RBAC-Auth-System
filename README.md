@@ -16,7 +16,9 @@ An email-first CRM that reads a company inbox, classifies emails (enquiry/suppor
 9. AI & Intent Detection
 10. User Roles & Permissions
 11. API Notes
-12. Troubleshooting
+12. API Examples
+13. Screenshots
+14. Troubleshooting
 
 ---
 
@@ -188,6 +190,45 @@ http-server -p 3000
 
 Open:
 - `http://localhost:3000`
+
+---
+
+## API Examples
+
+Create a user (invite + password setup email):
+```
+curl -X POST http://localhost:5000/api/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin_token>" \
+  -d '{
+    "name": "Marketing User",
+    "email": "marketing@company.com",
+    "role": "marketing"
+  }'
+```
+
+Manual email ingestion (for testing without IMAP):
+```
+curl -X POST http://localhost:5000/api/emails/receive \
+  -H "Content-Type: application/json" \
+  -d '{
+    "senderEmail": "customer@example.com",
+    "senderName": "Jane Smith",
+    "subject": "Need pricing details",
+    "message": "Please share pricing and demo options."
+  }'
+```
+
+---
+
+## Screenshots
+
+Add screenshots to `docs/screenshots/` and update links below:
+
+- Admin dashboard: `docs/screenshots/admin-dashboard.png`
+- Marketing dashboard: `docs/screenshots/marketing-dashboard.png`
+- Support dashboard: `docs/screenshots/support-dashboard.png`
+- Set password screen: `docs/screenshots/set-password.png`
 
 ---
 
