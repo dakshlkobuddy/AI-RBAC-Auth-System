@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initDashboard() {
   const user = getCurrentUser();
   updateUserDisplay(user);
+  initLayoutControls();
   setupEventListeners();
   loadDashboardData();
 }
@@ -23,6 +24,41 @@ function updateUserDisplay(user) {
     userDisplay.textContent = user.name;
   }
 }
+
+function initLayoutControls() {
+  const body = document.body;
+  const themeToggle = document.getElementById('themeToggle');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  if (savedTheme === 'dark') {
+    body.classList.add('theme-dark');
+  }
+  if (themeToggle) {
+    themeToggle.textContent = savedTheme === 'dark' ? 'Light mode' : 'Dark mode';
+  }
+
+  const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+  if (isCollapsed) {
+    body.classList.add('sidebar-collapsed');
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const nowDark = body.classList.toggle('theme-dark');
+      localStorage.setItem('theme', nowDark ? 'dark' : 'light');
+      themeToggle.textContent = nowDark ? 'Light mode' : 'Dark mode';
+    });
+  }
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      const collapsedNow = body.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sidebarCollapsed', collapsedNow ? 'true' : 'false');
+    });
+  }
+}
+
 
 function setupEventListeners() {
   // Tab switching

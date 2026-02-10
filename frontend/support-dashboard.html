@@ -14,11 +14,12 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>CRM System</h2>
+                <button id="sidebarToggle" class="icon-btn" type="button">Menu</button>
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a href="#dashboard" class="nav-link active" data-tab="dashboard">Dashboard</a></li>
-                    <li><a href="#tickets" class="nav-link" data-tab="tickets">Support Tickets</a></li>
+                    <li><a href="#dashboard" class="nav-link active" data-tab="dashboard" data-short="D"><span class="nav-text">Dashboard</span></a></li>
+                    <li><a href="#tickets" class="nav-link" data-tab="tickets" data-short="S"><span class="nav-text">Support Tickets</span></a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
@@ -33,6 +34,7 @@
             <header class="header">
                 <h1 id="pageTitle">Dashboard</h1>
                 <div class="header-right">
+                    <button id="themeToggle" class="btn btn-secondary btn-sm theme-toggle" type="button">Dark mode</button>
                     <span id="userDisplay"></span>
                 </div>
             </header>
