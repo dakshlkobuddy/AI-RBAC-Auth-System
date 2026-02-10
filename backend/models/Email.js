@@ -179,7 +179,8 @@ class Email {
         RETURNING id, company_name;
       `;
 
-      result = await client.query(query, [companyId, companyName, website || (isPersonal ? null : domain)]);
+      // Only persist website if explicitly extracted from footer/signature
+      result = await client.query(query, [companyId, companyName, website || null]);
       return result.rows[0];
     } catch (error) {
       console.error('Error finding or creating company:', error);
