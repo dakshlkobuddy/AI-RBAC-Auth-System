@@ -506,6 +506,12 @@ body.theme-dark .login-box {
   color: #e2e8f0;
 }
 
+body.theme-dark .stats-card {
+  background: #0f172a;
+  border: 1px solid #1f2937;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
 body.theme-dark .stats-card h3,
 body.theme-dark .card h3,
 body.theme-dark .section-header h2,
