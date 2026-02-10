@@ -519,26 +519,53 @@ body.theme-dark .data-table thead {
   border-bottom-color: #1f2937;
 }
 
+body.theme-dark .data-table th {
+  color: #cbd5f5;
+}
+
 body.theme-dark .data-table td,
 body.theme-dark .data-table th {
   border-bottom-color: #1f2937;
+}
+
+body.theme-dark .data-table td {
+  color: #e2e8f0;
 }
 
 body.theme-dark .data-table tbody tr:hover {
   background-color: #0b1220;
 }
 
+body.theme-dark .data-table tbody tr {
+  background-color: transparent;
+}
+
+body.theme-dark .empty-state {
+  color: #94a3b8;
+}
+
 body.theme-dark .sidebar {
-  background-color: #111827;
+  background-color: #0b1324;
+  border-right: 1px solid #1f2937;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.35);
 }
 
 body.theme-dark .nav-link {
-  color: #cbd5f5;
+  color: #dbe4f3;
 }
 
 body.theme-dark .nav-link:hover,
 body.theme-dark .nav-link.active {
-  background-color: #1d4ed8;
+  background-color: #1e3a8a;
+  color: #ffffff;
+}
+
+body.theme-dark .sidebar-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+body.theme-dark .user-info small {
+  color: #93a3b8;
 }
 
 body.theme-dark .form-group input,
