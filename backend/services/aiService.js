@@ -373,7 +373,8 @@ function extractFooterDetails(message) {
     name: '',
     company_name: '',
     phone: '',
-    location: ''
+    location: '',
+    website: ''
   };
 
   if (footerLines.length === 0) return details;
@@ -386,6 +387,11 @@ function extractFooterDetails(message) {
   // Location/Address
   const locationLine = footerLines.find(line => /(address|addr|road|street|st\.|ave|avenue|city|state|country|india|usa|uk|lane|blvd|floor)/i.test(line)) || '';
   if (locationLine) details.location = locationLine.trim();
+
+  // Website
+  const websiteLine = footerLines.find(line => /(https?:\/\/|www\.)/i.test(line)) || '';
+  const websiteMatch = websiteLine.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/i);
+  if (websiteMatch) details.website = websiteMatch[1].trim();
 
   // Name: first reasonable line that isn't a label/phone/location/company
   const nameCandidate = footerLines.find(line =>
@@ -410,13 +416,15 @@ function normalizeExtractedDetails(details, message) {
   const companyName = details.company_name?.trim() || footerDetails.company_name || null;
   const location = details.location?.trim() || footerDetails.location || null;
   const productInterest = details.product_interest?.trim() || null;
+  const website = details.website?.trim() || footerDetails.website || null;
 
   return {
     name,
     phone,
     company_name: companyName,
     location,
-    product_interest: productInterest
+    product_interest: productInterest,
+    website
   };
 }
 
@@ -435,7 +443,8 @@ Return ONLY valid JSON with this schema:
     "phone": "",
     "company_name": "",
     "location": "",
-    "product_interest": ""
+    "product_interest": "",
+    "website": ""
   },
   "reply": ""
 }
@@ -461,6 +470,8 @@ Additional extraction rules (IMPORTANT):
 - Extract company ONLY if a clear company name is explicitly written in the footer.
 - Do NOT guess company from the email domain.
 - If any field is not clearly present in the footer, leave it as empty string.
+- Website can be extracted only if explicitly written in the footer (e.g., https://example.com or www.example.com).
+- Do NOT infer website from the email domain.
 
 Sender name: ${fromName || ''}
 Subject: ${subject}

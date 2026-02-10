@@ -59,7 +59,12 @@ class Email {
         const extractedPhone = extracted?.phone || phone || null;
 
         // Step 1: Find or create company
-        const company = await this.findOrCreateCompany(client, fromEmail, extracted?.company_name);
+        const company = await this.findOrCreateCompany(
+          client,
+          fromEmail,
+          extracted?.company_name,
+          extracted?.website
+        );
 
         // Step 2: Find or create contact
         const contact = await this.findOrCreateContact(
@@ -125,7 +130,7 @@ class Email {
   /**
    * Find or create company from email domain
    */
-  static async findOrCreateCompany(client, email, extractedCompanyName = '') {
+  static async findOrCreateCompany(client, email, extractedCompanyName = '', extractedWebsite = '') {
     try {
       const domain = email.split('@')[1];
       
@@ -134,6 +139,7 @@ class Email {
       
       let companyName = domain;
       let isPersonal = false;
+      const website = extractedWebsite && extractedWebsite.trim().length > 1 ? extractedWebsite.trim() : null;
 
       if (extractedCompanyName && extractedCompanyName.trim().length > 1) {
         companyName = extractedCompanyName.trim();
@@ -152,7 +158,15 @@ class Email {
       let result = await client.query(query, [companyName]);
 
       if (result.rows.length > 0) {
-        return result.rows[0];
+        const existing = result.rows[0];
+        if (website && (!existing.website || existing.website === domain || existing.website === 'gmail.com')) {
+          const updateResult = await client.query(
+            `UPDATE companies SET website = $1 WHERE id = $2 RETURNING id, company_name, website`,
+            [website, existing.id]
+          );
+          return updateResult.rows[0] || existing;
+        }
+        return existing;
       }
 
       // Create new company
@@ -165,7 +179,7 @@ class Email {
         RETURNING id, company_name;
       `;
 
-      result = await client.query(query, [companyId, companyName, domain]);
+      result = await client.query(query, [companyId, companyName, website || (isPersonal ? null : domain)]);
       return result.rows[0];
     } catch (error) {
       console.error('Error finding or creating company:', error);
