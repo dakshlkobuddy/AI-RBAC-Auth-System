@@ -35,7 +35,9 @@ function initLayoutControls() {
     body.classList.add('theme-dark');
   }
   if (themeToggle) {
-    themeToggle.textContent = savedTheme === 'dark' ? 'Light mode' : 'Dark mode';
+    const label = savedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    themeToggle.setAttribute('aria-label', label);
+    themeToggle.setAttribute('title', label);
   }
 
   const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -47,7 +49,9 @@ function initLayoutControls() {
     themeToggle.addEventListener('click', () => {
       const nowDark = body.classList.toggle('theme-dark');
       localStorage.setItem('theme', nowDark ? 'dark' : 'light');
-      themeToggle.textContent = nowDark ? 'Light mode' : 'Dark mode';
+      const label = nowDark ? 'Switch to light mode' : 'Switch to dark mode';
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
     });
   }
 
@@ -202,10 +206,12 @@ async function loadTickets(tickets) {
       <td>${ticket.company_name || 'N/A'}</td>
       <td><span class="badge badge-${ticket.customer_type}">${ticket.customer_type}</span></td>
       <td><span class="status-badge ${ticket.status}">${ticket.status}</span></td>
-      <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
+      <td><span class="table-nowrap">${new Date(ticket.created_at).toLocaleDateString()}</span></td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="viewTicket('${ticket.id}')">View</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-primary" onclick="viewTicket('${ticket.id}')">View</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
+        </div>
       </td>
     `;
     tbody.appendChild(row);
