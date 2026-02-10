@@ -39,7 +39,9 @@ function initLayoutControls() {
     body.classList.add('theme-dark');
   }
   if (themeToggle) {
-    themeToggle.textContent = savedTheme === 'dark' ? 'Light mode' : 'Dark mode';
+    const label = savedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    themeToggle.setAttribute('aria-label', label);
+    themeToggle.setAttribute('title', label);
   }
 
   const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -51,7 +53,9 @@ function initLayoutControls() {
     themeToggle.addEventListener('click', () => {
       const nowDark = body.classList.toggle('theme-dark');
       localStorage.setItem('theme', nowDark ? 'dark' : 'light');
-      themeToggle.textContent = nowDark ? 'Light mode' : 'Dark mode';
+      const label = nowDark ? 'Switch to light mode' : 'Switch to dark mode';
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
     });
   }
 
@@ -369,10 +373,12 @@ async function loadEnquiries(enquiries) {
       <td>${enquiry.company_name || 'N/A'}</td>
       <td><span class="badge badge-${enquiry.customer_type}">${enquiry.customer_type}</span></td>
       <td><span class="status-badge ${enquiry.status}">${enquiry.status}</span></td>
-      <td>${new Date(enquiry.created_at).toLocaleDateString()}</td>
+      <td><span class="table-nowrap">${new Date(enquiry.created_at).toLocaleDateString()}</span></td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="viewEnquiry('${enquiry.id}')">View</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteEnquiryConfirm('${enquiry.id}')">Delete</button>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-primary" onclick="viewEnquiry('${enquiry.id}')">View</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteEnquiryConfirm('${enquiry.id}')">Delete</button>
+        </div>
       </td>
     `;
     tbody.appendChild(row);
@@ -479,10 +485,12 @@ async function loadTickets(tickets) {
       <td>${ticket.company_name || 'N/A'}</td>
       <td><span class="badge badge-${ticket.customer_type}">${ticket.customer_type}</span></td>
       <td><span class="status-badge ${ticket.status}">${ticket.status}</span></td>
-      <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
+      <td><span class="table-nowrap">${new Date(ticket.created_at).toLocaleDateString()}</span></td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="viewTicket('${ticket.id}')">View</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-primary" onclick="viewTicket('${ticket.id}')">View</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTicketConfirm('${ticket.id}')">Delete</button>
+        </div>
       </td>
     `;
     tbody.appendChild(row);
@@ -703,13 +711,15 @@ function loadContacts(contacts) {
     row.innerHTML = `
       <td>${contact.name}</td>
       <td>${contact.email}</td>
-      <td>${contact.phone || 'N/A'}</td>
+      <td><span class="table-nowrap">${contact.phone || 'N/A'}</span></td>
       <td>${contact.company_name || 'N/A'}</td>
       <td><span class="badge badge-${contact.customer_type}">${contact.customer_type}</span></td>
       <td>${new Date(contact.created_at).toLocaleDateString()}</td>
       <td>
-        <button class="btn btn-sm btn-secondary" onclick="editContact('${contact.id}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteContactConfirm('${contact.id}')">Delete</button>
+        <div class="table-actions">
+          <button class="btn btn-sm btn-secondary" onclick="editContact('${contact.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteContactConfirm('${contact.id}')">Delete</button>
+        </div>
       </td>
     `;
     tbody.appendChild(row);

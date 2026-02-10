@@ -194,10 +194,10 @@ body.theme-dark {
 
 /* SIDEBAR */
 .sidebar {
-  width: 250px;
+  width: 190px;
   background-color: var(--secondary-color);
   color: white;
-  padding: 20px;
+  padding: 16px;
   overflow-y: auto;
 }
 
@@ -209,7 +209,7 @@ body.theme-dark {
 }
 
 .sidebar-header h2 {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   color: var(--primary-color);
   font-size: 22px;
 }
@@ -382,21 +382,33 @@ body.theme-dark {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  vertical-align: middle;
 }
 
 .data-table td {
   padding: 15px;
   border-bottom: 1px solid #ecf0f1;
+  vertical-align: middle;
 }
 
 .data-table tbody tr:hover {
   background-color: #f8f9fa;
 }
 
+.table-nowrap {
+  white-space: nowrap;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* Sidebar collapse */
 body.sidebar-collapsed .sidebar {
-  width: 80px;
-  padding: 20px 12px;
+  width: 64px;
+  padding: 16px 8px;
 }
 
 body.sidebar-collapsed .sidebar-header h2 {
@@ -449,8 +461,40 @@ body.sidebar-collapsed #logoutBtn::before {
   background: rgba(255, 255, 255, 0.2);
 }
 
+.sidebar-toggle {
+  min-width: 22px;
+  padding: 4px 6px;
+  position: relative;
+}
+
+.sidebar-toggle::before {
+  content: "<";
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body.sidebar-collapsed .sidebar-toggle::before {
+  content: ">";
+}
+
 .theme-toggle {
-  min-width: 96px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  border-radius: 8px;
+  background-color: rgba(15, 23, 42, 0.08);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231f2937'><path d='M21.64 13a1 1 0 0 0-1.05-.14A8.05 8.05 0 0 1 12 4a1 1 0 0 0-1.11-1 10 10 0 1 0 10 11 1 1 0 0 0-.25-.7z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+body.theme-dark .theme-toggle {
+  background-color: rgba(255, 255, 255, 0.12);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f8fafc'><path d='M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zm10.45 1.8l1.79-1.8-1.41-1.41-1.8 1.79 1.42 1.42zM12 4a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0V5a1 1 0 0 0-1-1zm0 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-8 1a1 1 0 0 0 1-1H3a1 1 0 0 0 0 2h2a1 1 0 0 0-1-1zm16-1a1 1 0 0 0 1 1h2a1 1 0 0 0 0-2h-2a1 1 0 0 0-1 1zm-2.34 6.16l1.8 1.79 1.41-1.41-1.79-1.8-1.42 1.42zM4.95 19.95l1.79-1.8-1.41-1.41-1.8 1.79 1.42 1.42zM12 19a1 1 0 0 0-1 1v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-1-1z'/></svg>");
 }
 
 /* Dark theme overrides */
