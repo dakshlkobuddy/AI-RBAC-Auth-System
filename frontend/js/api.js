@@ -93,9 +93,15 @@ class APIClient {
     try {
       this.showLoading();
       const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : { message: await response.text() };
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          this.handleAuthFailure();
+        }
         throw new Error(data.message || 'API Error');
       }
 
@@ -106,6 +112,16 @@ class APIClient {
     } finally {
       this.hideLoading();
     }
+  }
+
+  handleAuthFailure() {
+    this.removeToken();
+    localStorage.removeItem('user');
+
+    if (typeof window === 'undefined') return;
+    const page = (window.location.pathname.split('/').pop() || '').toLowerCase();
+    if (page === 'index.html' || page === '' || page === 'set-password.html') return;
+    window.location.href = 'index.html';
   }
 
   showLoading() {
@@ -133,11 +149,15 @@ class APIClient {
   }
 
   async setPassword(userId, password) {
-    return this.request('POST', `/auth/set-password/${userId}`, { password });
+    throw new Error('Deprecated. Use setPasswordWithToken(token, password).');
   }
 
   async setPasswordWithToken(token, password) {
     return this.request('POST', '/auth/set-password', { token, password });
+  }
+
+  async getCurrentUser() {
+    return this.request('GET', '/auth/me');
   }
 
   // User APIs

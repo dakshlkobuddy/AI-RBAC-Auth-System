@@ -75,10 +75,25 @@ function logout() {
 }
 
 // Check if user is authenticated
-function checkAuth() {
+async function checkAuth() {
   const token = localStorage.getItem('token');
   if (!token) {
     window.location.href = 'index.html';
+    return false;
+  }
+
+  try {
+    const response = await apiClient.getCurrentUser();
+    if (!response?.success || !response?.user) {
+      throw new Error('Invalid session');
+    }
+    localStorage.setItem('user', JSON.stringify(response.user));
+    return true;
+  } catch (error) {
+    apiClient.removeToken();
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+    return false;
   }
 }
 

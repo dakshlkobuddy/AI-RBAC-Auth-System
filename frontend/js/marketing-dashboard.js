@@ -3,8 +3,9 @@
  * Handles marketing panel functionality for enquiry management
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  checkAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const isAuthenticated = await checkAuth();
+  if (!isAuthenticated) return;
   initDashboard();
 });
 
@@ -163,18 +164,7 @@ async function loadDashboardData() {
  */
 async function loadDashboardStats() {
   try {
-    const response = await fetch('http://localhost:5000/api/marketing/dashboard-stats', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch dashboard stats');
-    }
-
-    const data = await response.json();
+    const data = await apiClient.request('GET', '/marketing/dashboard-stats');
     const stats = data.data;
 
     // Update stat cards
@@ -197,18 +187,7 @@ async function loadDashboardStats() {
  */
 async function loadEnquiriesTable() {
   try {
-    const response = await fetch('http://localhost:5000/api/marketing/enquiries', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch enquiries');
-    }
-
-    const data = await response.json();
+    const data = await apiClient.request('GET', '/marketing/enquiries');
     const enquiries = data.data || [];
 
     renderEnquiriesTable(enquiries);
@@ -299,18 +278,7 @@ function switchTab(tabName) {
  */
 async function viewEnquiryDetails(enquiryId) {
   try {
-    const response = await fetch(`http://localhost:5000/api/marketing/enquiries/${enquiryId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch enquiry details');
-    }
-
-    const data = await response.json();
+    const data = await apiClient.request('GET', `/marketing/enquiries/${enquiryId}`);
     const enquiry = data.data;
 
     // Build detail view HTML
@@ -426,18 +394,7 @@ async function closeEnquiry(enquiryId) {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/marketing/enquiries/${enquiryId}/close`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to close enquiry');
-    }
-
-    const data = await response.json();
+    const data = await apiClient.request('POST', `/marketing/enquiries/${enquiryId}/close`);
     
     if (data.success) {
       await showModal('Enquiry closed successfully!', { title: 'Success', showCancel: false });
@@ -494,16 +451,7 @@ async function deleteEnquiryConfirm(enquiryId) {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/marketing/enquiries/${enquiryId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to delete enquiry');
-    }
+    await apiClient.request('DELETE', `/marketing/enquiries/${enquiryId}`);
 
     await showModal('Enquiry deleted successfully!', { title: 'Success', showCancel: false });
     backToEnquiries();

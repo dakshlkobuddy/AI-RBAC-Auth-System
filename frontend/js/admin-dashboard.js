@@ -7,8 +7,9 @@ let editingUserId = null;
 let cachedUsers = [];
 let editingContactId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  checkAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const isAuthenticated = await checkAuth();
+  if (!isAuthenticated) return;
   initDashboard();
 });
 

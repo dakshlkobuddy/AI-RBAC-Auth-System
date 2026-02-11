@@ -3,8 +3,9 @@
  * Handles support panel functionality
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  checkAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const isAuthenticated = await checkAuth();
+  if (!isAuthenticated) return;
   initDashboard();
 });
 
