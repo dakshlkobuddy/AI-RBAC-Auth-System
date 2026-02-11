@@ -17,7 +17,38 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+const isDev = (process.env.NODE_ENV || 'development') !== 'production';
+const defaultDevOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500'
+];
+
+const corsOrigin = (origin, callback) => {
+  // Allow server-to-server / curl / Postman requests with no Origin header
+  if (!origin) return callback(null, true);
+
+  const whitelist = isDev
+    ? [...new Set([...allowedOrigins, ...defaultDevOrigins])]
+    : allowedOrigins;
+
+  if (whitelist.includes(origin)) {
+    return callback(null, true);
+  }
+
+  return callback(new Error('CORS blocked for this origin'));
+};
+
+app.use(cors({
+  origin: corsOrigin,
+  credentials: true
+}));
 
 // Health check
 app.get('/health', (req, res) => {

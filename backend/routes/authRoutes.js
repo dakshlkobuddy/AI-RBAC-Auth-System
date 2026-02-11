@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const authenticate = require('../middleware/authenticate');
 
 /**
  * @route POST /api/auth/login
@@ -28,32 +29,6 @@ router.post('/login', async (req, res, next) => {
 });
 
 /**
- * @route POST /api/auth/set-password/:userId
- * @desc Set password for new user
- * @access Public (with userId token)
- */
-router.post('/set-password/:userId', async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    const { password } = req.body;
-
-    if (!password) {
-      return res.status(400).json({ message: 'Password is required' });
-    }
-
-    const result = await authController.setPassword(userId, password);
-
-    if (!result.success) {
-      return res.status(400).json({ message: result.message });
-    }
-
-    res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
  * @route POST /api/auth/set-password
  * @desc Set password with token
  * @access Public (with token)
@@ -70,6 +45,25 @@ router.post('/set-password', async (req, res, next) => {
 
     if (!result.success) {
       return res.status(400).json({ message: result.message });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/auth/me
+ * @desc Validate token and return current user
+ * @access Private
+ */
+router.get('/me', authenticate, async (req, res, next) => {
+  try {
+    const result = await authController.getProfile(req.userId);
+
+    if (!result.success) {
+      return res.status(401).json({ message: result.message });
     }
 
     res.status(200).json(result);

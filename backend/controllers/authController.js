@@ -121,8 +121,36 @@ const setPasswordWithToken = async (token, password) => {
   }
 };
 
+// Validate active session and return current user profile
+const getProfile = async (userId) => {
+  try {
+    const user = await User.getUserById(userId);
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
+    if (!user.is_active) {
+      return { success: false, message: 'User account is inactive' };
+    }
+
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role_name,
+      },
+    };
+  } catch (error) {
+    console.error('Get profile error:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   login,
   setPassword,
   setPasswordWithToken,
+  getProfile,
 };
